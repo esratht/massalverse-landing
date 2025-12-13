@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zodiac Gölge Matrisi - Yargı Modu</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Orbitron:wght@500;900&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- CSS: GÖMÜLÜ GLITCH VE TEMA --- */
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            background-color: #050505; 
+            color: #ff00ff; /* Mor/Siyah Neon Tema */
+            font-family: 'Fira Code', monospace;
+            min-height: 100vh;
+            display: flex; justify-content: center; align-items: center; 
+        }
+        .container { 
+            width: 95%; max-width: 700px;
+            padding: 20px;
+        }
+
+        /* GLITCH VE SCANLINES EFEKTİ */
+        .scan-lines {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            z-index: -1;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.2) 0px,
+                rgba(0, 0, 0, 0.2) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+            pointer-events: none;
+        }
+        p, .metric-item, .screen h1, .btn {
+            text-shadow: 1px 0 0 rgba(255, 0, 255, 0.7), -1px 0 0 rgba(0, 255, 255, 0.7);
+        }
+        .screen.active {
+            animation: flicker 0.15s infinite alternate;
+        }
+        @keyframes flicker {
+            0% { opacity: 1; }
+            50% { opacity: 0.95; }
+            100% { opacity: 1; }
+        }
+
+        /* PANEL STİLLERİ */
+        .screen { 
+            border: 2px solid #ff00ff; 
+            background: rgba(30, 0, 30, 0.5); 
+            padding: 30px; 
+            text-align: center;
+            display: flex; 
+            flex-direction: column;
+            /* Ekranları gizlemek için varsayılan stil */
+            display: none; 
+        }
+        /* JS ile aktif edilen ekran */
+        .screen.active { display: flex; }
+
+        .screen h1 { 
+            font-family: 'Orbitron'; color: #fff; 
+            text-shadow: 0 0 10px #ff00ff; margin-bottom: 10px;
+        }
+        
+        /* BURÇ SEÇİM KUTUSU */
+        #sign-selector {
+            padding: 15px; margin-top: 20px; font-size: 1.1rem;
+            background: rgba(0, 0, 0, 0.6); color: #ff00ff;
+            border: 1px solid #ff00ff; font-family: 'Fira Code';
+            width: 100%;
+            cursor: pointer;
+        }
+
+        /* BUTONLAR */
+        .btn {
+            padding: 15px 30px; font-family: 'Orbitron'; font-weight: bold; cursor: pointer; border: none; transition: 0.3s;
+            text-decoration: none; display: inline-block; width: 100%; text-align: center;
+        }
+        .btn-submit { 
+            background: #ff00ff; color: #000; 
+            margin-top: 20px; 
+        }
+        .btn-submit:hover { background: #fff; box-shadow: 0 0 15px #ff00ff; }
+
+        .btn-outline { 
+            background: transparent; border: 1px solid #555; color: #555; 
+            margin-top: 15px; 
+        }
+        .btn-outline:hover { color: #fff; border-color: #fff; }
+
+        /* SONUÇ EKRANI DETAYLARI */
+        .result-box {
+            padding: 20px; border: 2px solid #00ff00; background: rgba(0, 30, 0, 0.5);
+            margin-top: 20px; text-align: left;
+        }
+        .archetype-result { 
+            font-size: 1.5rem; font-weight: bold; color: #ff00ff; 
+            margin-bottom: 15px; text-align: center; border-bottom: 1px dashed #ff00ff; padding-bottom: 10px;
+        }
+        .metric-item {
+            border-left: 3px solid #00ff00; padding: 10px 0 10px 15px; margin-bottom: 15px;
+            background: rgba(0, 20, 0, 0.3);
+        }
+        .metric-item strong { color: #00ff00; font-size: 0.95rem; display: block; margin-bottom: 5px; }
+        .metric-item p { color: #ccc; font-size: 0.9rem; line-height: 1.4; }
+    </style>
+</head>
+<body>
+    <div class="scan-lines"></div>
+
+    <div class="container">
+        <div id="selection-screen" class="screen active">
+            <h1>ZODIAC GÖLGE MATRİSİ</h1>
+            <p><strong>YARGI MODU AKTİF:</strong> Sistem, her burç için 3 farklı hata kodu (Pasif, Aktif, Gizli) tanımladı. Bugün hangi yüzünle karşılaşacaksın?</p>
+            <p style="color: #ff00ff; font-size: 0.9rem; margin-top: 10px;">(Dikkat: Sonuçlar rastgele seçilir ve rahatsız edici olabilir.)</p>
+            
+            <select id="sign-selector">
+                <option value="" disabled selected>— Burcunu Seç —</option>
+                <option value="KOÇ">KOÇ</option>
+                <option value="BOĞA">BOĞA</option>
+                <option value="İKİZLER">İKİZLER</option>
+                <option value="YENGEÇ">YENGEÇ</option>
+                <option value="ASLAN">ASLAN</option>
+                <option value="BAŞAK">BAŞAK</option>
+                <option value="TERAZİ">TERAZİ</option>
+                <option value="AKREP">AKREP</option>
+                <option value="YAY">YAY</option>
+                <option value="OĞLAK">OĞLAK</option>
+                <option value="KOVA">KOVA</option>
+                <option value="BALIK">BALIK</option>
+            </select>
+
+            <button class="btn btn-submit" onclick="testButtonFunction()">ANALİZİ BAŞLAT</button>
+            
+            <a href="../index.html" class="btn btn-outline">ANA MENÜYE DÖN</a>
+        </div>
+
+        <div id="result-screen" class="screen">
+            <h1>SİSTEM HATA RAPORU</h1>
+            <div class="result-box">
+                <p id="archetype-description-top" style="text-align: center; color: #ff4500; font-style: italic; margin-bottom: 10px;"></p>
+                <p id="archetype-result" class="archetype-result">...</p>
+                
+                <h3 style="color: #00ff00; font-family: 'Orbitron'; margin-top: 10px;">KRİTİK ANALİZ METRİKLERİ:</h3>
+                <div id="metrics-output">
+                    </div>
+            </div>
+            
+            <button class="btn btn-submit" onclick="location.reload()">YENİ ANALİZ (FARKLI BİR TOKAT İÇİN)</button>
+            
+            <a href="../index.html" class="btn btn-outline">ANA MENÜYE DÖN</a>
+        </div>
+    </div>
+
+    <script>
+        // --- YARGI MODU: GENİŞLETİLMİŞ GÖLGE MATRİSİ (3 SEVİYE) ---
+        const ZODIAC_DATA = {
+            "KOÇ": {
+                shadows: [
+                    { title: "ACEMİ SAVAŞÇI (Pasif)", desc: "Başladığın her savaşı yarım bırakıyorsun. Heyecanla başlıyor, disiplin gerektirdiği an kaçıyorsun." },
+                    { title: "YIKICI ÇOCUK (Aktif)", desc: "Öfken bir strateji değil, sadece gürültü. İstediğin olmadığında çevreni yakarak aslında kendini izole ediyorsun." },
+                    { title: "BENLİK KÖRLÜĞÜ (Gizli)", desc: "Sadece kendi sesini duyuyorsun. Başkalarının varlığı senin için sadece birer figüran." }
+                ]
+            },
+            "BOĞA": {
+                shadows: [
+                    { title: "KİLİTLİ KASA (Pasif)", desc: "Güvenlik takıntın seni yaşayan bir ölüye çevirdi. Risk almamak için hayatı donduruyorsun." },
+                    { title: "MADDİ OBUR (Aktif)", desc: "Ruhsal boşluğunu eşya, yemek veya parayla doldurmaya çalışıyorsun ama kova delik." },
+                    { title: "DEĞİŞİM DİRENCİ (Gizli)", desc: "Biten bir şeyi sırf 'düzen bozulmasın' diye sürdürüyorsun. Çürümüş bir cesedi taşıyorsun." }
+                ]
+            },
+            "İKİZLER": {
+                shadows: [
+                    { title: "YANKI ODASI (Pasif)", desc: "Kendi fikrin yok. En son kiminle konuştuysan onun fikrini savunuyorsun." },
+                    { title: "KELİME SİLAHŞÖRÜ (Aktif)", desc: "Gerçeği o kadar çok büküyorsun ki, sen bile neyin yalan olduğunu unuttun." },
+                    { title: "YÜZEYSEL AYNA (Gizli)", desc: "Derinleşmekten korktuğun için her şeyi şakaya vurup geçiştiriyorsun. Derinlik sarhoşluğundan kaçıyorsun." }
+                ]
+            },
+            "YENGEÇ": {
+                shadows: [
+                    { title: "KABUKLU KURBAN (Pasif)", desc: "Sürekli geçmişi deşip kendine acı çektirecek anılar buluyorsun. Melankoli senin konfor alanın." },
+                    { title: "DUYGU ŞANTAJCISI (Aktif)", desc: "Sevgi değil, bağımlılık istiyorsun. 'Ben senin için saçımı süpürge ettim' diyerek insanları borçlandırıyorsun." },
+                    { title: "GİZLİ KİN (Gizli)", desc: "Affetmiş gibi yapıp, yapılan hatayı asla unutmuyorsun ve en beklenmedik anda masaya koyuyorsun." }
+                ]
+            },
+            "ASLAN": {
+                shadows: [
+                    { title: "BOŞ TAHT (Pasif)", desc: "Onaylanmadığın an sönüyorsun. Kendi değerin, başkasının alkışına endeksli." },
+                    { title: "DRAMA KRALI (Aktif)", desc: "İlgi odağı olmak için sorun yaratıyorsun. Sakinlik senin için 'görünmezlik' demek." },
+                    { title: "KİBİR ZIRHI (Gizli)", desc: "Eleştiriyi 'kıskançlık' olarak yaftalayıp, gelişime kendini kapatıyorsun." }
+                ]
+            },
+            "BAŞAK": {
+                shadows: [
+                    { title: "ANALİZ FELCİ (Pasif)", desc: "Mükemmel olsun diye diye hiç başlamıyorsun. Detaylarda boğulup bütünü kaybediyorsun." },
+                    { title: "HİZMETÇİ SENDROMU (Aktif)", desc: "Kendini feda ederek değerli hissetmeye çalışıyorsun, sonra da kimse kıymet bilmiyor diye öfkeleniyorsun." },
+                    { title: "ZEHİRLİ ELEŞTİRMEN (Gizli)", desc: "Kendindeki eksikleri görmemek için başkalarının kusurlarına odaklanıyorsun." }
+                ]
+            },
+            "TERAZİ": {
+                shadows: [
+                    { title: "KARARSIZLIK HAPİSHANESİ (Pasif)", desc: "Seçim yapmamak için sürüklenmeyi tercih ediyorsun. Hayatı başkaları senin yerine yönetiyor." },
+                    { title: "GÜLÜMSEYEN YALANCI (Aktif)", desc: "Kavga çıkmasın diye sürekli 'evet' diyorsun ama içten içe sözünü tutmuyorsun." },
+                    { title: "YALNIZLIK FOBİSİ (Gizli)", desc: "Kendinle baş başa kalmamak için kalitesiz ilişkilere katlanıyorsun." }
+                ]
+            },
+            "AKREP": {
+                shadows: [
+                    { title: "KÜL KOLEKSİYONCUSU (Pasif)", desc: "Sana yapılan yanlışı asla bırakmıyorsun. İçinde zehir biriktirip kendini hasta ediyorsun." },
+                    { title: "KONTROL MANYAKLIĞI (Aktif)", desc: "Güvenmediğin için her şeyi ve herkesi manipüle ederek kontrol etmeye çalışıyorsun." },
+                    { title: "YIKIM ARZUSU (Gizli)", desc: "İşler biraz kötü gittiğinde 'tamamen yansın' diyerek her şeyi sabote ediyorsun." }
+                ]
+            },
+            "YAY": {
+                shadows: [
+                    { title: "SORUMSUZ GEZGİN (Pasif)", desc: "Bağlanmaktan korktuğun için hiçbir yerde kök salamıyorsun. Özgürlük değil, kaçış peşindesin." },
+                    { title: "UKALA VAİZ (Aktif)", desc: "Dinlemiyorsun, sadece anlatıyorsun. Kendi doğrunu tek gerçek sanıyorsun." },
+                    { title: "KÖR İYİMSERLİK (Gizli)", desc: "Sorunları çözmek yerine 'halledilir' diyerek üstünü örtüyorsun. Gerçeklerden kopuksun." }
+                ]
+            },
+            "OĞLAK": {
+                shadows: [
+                    { title: "DUYGU DUVARI (Pasif)", desc: "Zayıf görünmemek için kalbini betona gömdün. Kimse sana ulaşamıyor." },
+                    { title: "BAŞARI ROBOTU (Aktif)", desc: "İnsanları statü basamağı olarak görüyorsun. Zirvedesin ama yalnızsın." },
+                    { title: "KARAMSARLİK ÇUKURU (Gizli)", desc: "En kötü senaryoya o kadar odaklısın ki, fırsatları tehdit sanıyorsun." }
+                ]
+            },
+            "KOVA": {
+                shadows: [
+                    { title: "UZAYLI KOMPLEKSİ (Pasif)", desc: "Anlaşılmadığını düşünerek kendini toplumdan izole ediyorsun. Yalnızlığın senin tercihin değil, kibrin." },
+                    { title: "SOĞUK İSYAN (Aktif)", desc: "Sırf karşı çıkmış olmak için mantıklı olana bile itiraz ediyorsun." },
+                    { title: "TEORİK HÜMANİST (Gizli)", desc: "İnsanlığı seviyorsun ama insanlara tahammülün yok. Birebir ilişkilerde buzdolabı gibisin." }
+                ]
+            },
+            "BALIK": {
+                shadows: [
+                    { title: "GERÇEKLİK KAÇAĞI (Pasif)", desc: "Zorluk görünce hayal dünyana kaçıyorsun. Uyuşmak (uyku, oyun, madde) senin çözümün." },
+                    { title: "KURTARICI KURBAN (Aktif)", desc: "Kendi hayatını düzeltemezken başkalarını kurtarmaya çalışıp beraber batıyorsun." },
+                    { title: "SINIRSIZLIK (Gizli)", desc: "Hayır diyemediğin için başkalarının duygusal çöplüğüne dönüyorsun." }
+                ]
+            }
+        };
+
+        // YENİ METRİK SİSTEMİ: Dinamik veriyi işleyecek şekilde güncellendi
+        const ANALYSIS_METRICS = [
+            { 
+                code: "MARS VURUCU YÖN", 
+                title: "Eylem Planı", 
+                action: (data) => `Bu gölgenin ilacı eylemdir. Tespit edilen zaaf: "${data.focus}". Mars'ın enerjisini bunu kırmak için kullan.` 
+            },
+            { 
+                code: "SATÜRN SINIR AÇISI", 
+                title: "Kısıtlayıcı Duvar", 
+                action: (data) => `Sistemin seni kısıtladığı nokta tam olarak burası: "${data.focus}". Bu duvarı yıkmadan özgürleşemezsin.` 
+            },
+            { 
+                code: "MERKÜR'ÜN ÇARPITMASI", 
+                title: "Zihinsel Tuzak", 
+                action: (data) => `Zihnin sana yalan söylüyor. Kendine söylediğin "${data.focus}" hikayesi, aslında bir kaçış planı.` 
+            },
+            { 
+                code: "JÜPİTER'İN KİLİDİ", 
+                title: "Potansiyel Kaybı", 
+                action: (data) => `Genişlemeni engelleyen tıkanıklık: "${data.focus}". Bu gölgeyi kabul edip dönüştürürsen, kilit açılacak.` 
+            }
+        ];
+
+        // RASTGELE GÖLGE SEÇİM FONKSİYONU
+        function generateShadowReport(sign) {
+            const data = ZODIAC_DATA[sign];
+            
+            if (!data) {
+                return { archetype: "SİNYAL YOK", report: "Bilinmeyen Burç Kodu.", metrics: [] };
+            }
+
+            // KRİTİK DEĞİŞİKLİK: 3 Gölgeden Rastgele Birini Seçme
+            // data.shadows bir dizidir (array). Math.random ile 0, 1 veya 2. indexi seçiyoruz.
+            const randomIndex = Math.floor(Math.random() * data.shadows.length);
+            const selectedShadow = data.shadows[randomIndex];
+
+            // Metrikleri karıştır ve 3 tanesini seç
+            const shuffledMetrics = ANALYSIS_METRICS.sort(() => 0.5 - Math.random());
+            const selectedMetrics = shuffledMetrics.slice(0, 3); 
+
+            // Metrikleri, seçilen gölgenin açıklamasına (desc) göre oluştur
+            const reportMetrics = selectedMetrics.map(metric => ({
+                code: metric.code,
+                title: metric.title,
+                // Analiz kısmına seçilen gölgenin açıklamasını gönderiyoruz
+                analysis: metric.action({ focus: selectedShadow.desc }) 
+            }));
+
+            return {
+                archetype: selectedShadow.title, // Başlık (Örn: ACEMİ SAVAŞÇI)
+                report: `Yolcu, ${sign} frekansında derin tarama tamamlandı. Şu anki titreşimin **${selectedShadow.title}** hata kodunda takılı kalmış.\n\nKRİTİK HATA: ${selectedShadow.desc}`,
+                metrics: reportMetrics
+            };
+        }
+        
+        // --- ARAYÜZ VE TEST İŞLEMLERİ ---
+
+        function switchScreen(id) {
+            document.getElementById('selection-screen').style.display = 'none';
+            document.getElementById('result-screen').style.display = 'none';
+            document.getElementById(id).style.display = 'flex';
+        }
+
+        function testButtonFunction() {
+            const selector = document.getElementById('sign-selector');
+            if (!selector.value || selector.value === "") {
+                alert("UYARI: Analizden önce burcunu seçmelisin!");
+                return;
+            }
+            startAnalysis(selector.value);
+        }
+
+        function startAnalysis(sign) {
+            // Analizi Çalıştır
+            const reportData = generateShadowReport(sign); 
+            
+            // Sonuçları Ekrana Bas
+            document.getElementById('archetype-description-top').innerText = reportData.report; // Ana metin buraya
+            document.getElementById('archetype-result').innerText = reportData.archetype; // Başlık buraya
+            
+            const metricsOutput = document.getElementById('metrics-output');
+            metricsOutput.innerHTML = '';
+
+            // Metrikleri Ekle
+            reportData.metrics.forEach(metric => {
+                const item = document.createElement('div');
+                item.classList.add('metric-item');
+                item.innerHTML = `
+                    <strong>${metric.code} (${metric.title})</strong>
+                    <p>${metric.analysis}</p>
+                `;
+                metricsOutput.appendChild(item);
+            });
+
+            switchScreen('result-screen');
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+             document.getElementById('selection-screen').classList.add('active');
+        });
+    </script>
+</body>
+</html>

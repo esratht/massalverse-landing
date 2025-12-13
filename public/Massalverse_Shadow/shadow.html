@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Massalverse - Gölge Biyografi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Orbitron:wght@500;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="shadow.css">
+    
+    <style>
+        /* Sadece Ana Menü Buton Stili (Eğer shadow.css'de yoksa) */
+        .btn-back-to-main {
+            background-color: transparent;
+            border: 1px solid #00ff6a;
+            color: #00ff6a;
+            margin-top: 15px;
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            text-decoration: none; /* Linkler için */
+            display: inline-block;
+            text-align: center;
+            width: 100%;
+        }
+        .btn-back-to-main:hover {
+            background-color: rgba(0, 255, 106, 0.1);
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="scan-lines"></div>
+
+    <div class="container">
+        
+        <div id="start-screen" class="screen active">
+            <h1 class="glitch-title" data-text="GÖLGE BİYOGRAFİ">GÖLGE BİYOGRAFİ</h1>
+            <p class="subtitle">Gerçek yüzünle tanışmaya cesaretin var mı?</p>
+            <div class="warning-box">
+                ⚠️ UYARI: Sonuçlar yapay zeka tarafından üretilir ve rahatsız edici olabilir.
+            </div>
+            
+            <button class="btn btn-danger" onclick="startProtocol()">YÜZLEŞMEYİ BAŞLAT</button>
+            
+            <a href="../index.html" class="btn-back-to-main">ANA MENÜYE DÖN</a>
+        </div>
+
+        <div id="question-screen" class="screen">
+            <div class="progress-bar"><div id="progress" class="fill"></div></div>
+            <h2 id="question-text" class="question-text">...</h2>
+            <input type="text" id="user-input" class="terminal-input" placeholder="Cevabını yaz..." autocomplete="off">
+            <button class="btn btn-next" onclick="nextQuestion()">DEVAM ET ></button>
+        </div>
+
+        <div id="loading-screen" class="screen">
+            <div class="loader">
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+            </div>
+            <p class="blink">Veriler analiz ediliyor...</p>
+            <p class="small-text">Yalanlar ayıklanıyor...</p>
+        </div>
+
+        <div id="result-screen" class="screen">
+            <div class="shadow-card">
+                <div class="card-header">
+                    <span>ID: <span id="user-id">UNKNOWN</span></span>
+                    <span class="danger-text">STATUS: EXPOSED</span>
+                </div>
+                <div class="card-body">
+                    <h3>GÖLGE KİMLİĞİN: <span id="archetype-title">...</span></h3>
+                    <p id="shadow-bio-text" class="bio-text"></p>
+                    
+                    <div class="stats">
+                        <div class="stat-box">
+                            <span>CESARET</span>
+                            <div class="stat-bar"><div id="courage-bar" style="width: 20%"></div></div>
+                        </div>
+                        <div class="stat-box">
+                            <span>VEFA</span>
+                            <div class="stat-bar"><div id="loyalty-bar" style="width: 90%"></div></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    MASSALVERSE_SHADOW_PROTOCOL // v2.0
+                </div>
+            </div>
+            
+            <div class="action-buttons">
+                <button class="btn btn-outline" onclick="location.reload()">TEKRAR DENE</button>
+                <button class="btn btn-share" onclick="shareOnTwitter()">X / TWITTER'DA İFŞA ET</button>
+                
+                <a href="../index.html" class="btn-back-to-main" style="margin-top: 15px;">ANA MENÜYE DÖN</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- GÖLGE BİYOGRAFİ MOTORU ---
+
+        const QUESTIONS = [
+            { id: "YANKI_ODASI", text: "En son ne zaman, yaptığın bir şey için 'Bu tamamen benim fikrim' dedin?" },
+            { id: "SANAL_ZIRH", text: "En son ne zaman, savunmasız görüneceğin için ağlamaktan vazgeçtin?" },
+            { id: "KIRMIZI_CIZGI", text: "Birine 'Hayır' dediğinde, ardından kendini ne kadar kötü hissediyorsun?" },
+            { id: "DUYGUSAL_SANDIK", text: "Geçmişteki bir hatayı affetmek, o hatayı unutmaktan daha zor mu?" },
+            { id: "HIZMET_HACKER", text: "Kendi hedeflerin için zaman ayırmak, başkasının işini bitirmekten daha mı bencilce geliyor?" },
+            { id: "GORSEL_FILTRE", text: "Yaptığın bir işin 'mükemmel' mi, yoksa 'paylaşılabilir' mi olmasını tercih ederdin?" },
+            { id: "KOD_DAR", text: "Bir plan yaparken, en çok ne kadar zaman harcıyorsun: Planlama mı, uygulama mı?" }
+        ];
+
+        const SHADOW_ARCHETYPES = {
+            "YANKI_ODASI": {
+                title: "YANKI ODASI",
+                desc: "Orijinallik Kaybı: Kendine ait bir ses yaratmak yerine, etrafındakilerin yankısını taşıyan bir boşluksun. Başkalarının fikirleriyle kendini var eden bir taklitçi.",
+                stats: { courage: 15, loyalty: 80 }
+            },
+            "SANAL_ZIRH": {
+                title: "SANAL ZIRH",
+                desc: "Duygusal Blokaj: Kalbinin etrafına ördüğün 'mantık' kalkanı seni insanlıktan soyutluyor. Korkun, savunmasız görünmek. Soğuk ve yapay bir kopya.",
+                stats: { courage: 30, loyalty: 50 }
+            },
+            "KIRMIZI_CIZGI": {
+                title: "KIRMIZI ÇİZGİ KAÇAKÇISI",
+                desc: "Sınır İhlali: Başkalarının rahatlığı uğruna kendi sınırlarını ihlal ediyorsun. 'Hayır' diyememe zafiyetinden güç alan bu gölge, seni sürekli tüketiyor.",
+                stats: { courage: 20, loyalty: 95 }
+            },
+            "DUYGUSAL_SANDIK": {
+                title: "DUYGUSAL BORÇ SANDIĞI",
+                desc: "Geçmişe Takılma: Kırgınlıkları ve haksızlıkları enerji olarak içinde taşıyorsun. Affetmeyi reddeden, daima mağdur rolünde kalan bir geçmiş yükü.",
+                stats: { courage: 40, loyalty: 60 }
+            },
+            "HIZMET_HACKER": {
+                title: "EGO HACKER'I",
+                desc: "Erteleme: Başkalarına yardım etme bahanesiyle kendi kritik hedeflerini sabote ediyorsun. Kendini 'fedakar' göstererek Mars eylemini bloke ediyorsun.",
+                stats: { courage: 50, loyalty: 85 }
+            },
+            "GORSEL_FILTRE": {
+                title: "GÖRSEL FİLTRE",
+                desc: "Yüzeycilik: Her şeyi sadece dışarıda 'iyi görünmek' için düzelten bir sanatçısın. Gerçek derinliği olmayan, sadece vitrine odaklanan boş bir kabuk.",
+                stats: { courage: 60, loyalty: 20 }
+            },
+            "KOD_DAR": {
+                title: "KOD DAR ",
+                desc: "Kontrol Saplantısı: Her şeyi mükemmel planlama isteğiyle felç olan bir organizatörsün. Mükemmeliyetçilik maskesiyle gerçek eylemden kaçıyorsun.",
+                stats: { courage: 10, loyalty: 40 }
+            }
+        };
+
+        let currentQIndex = 0;
+        let userAnswers = [];
+
+        // --- ARAYÜZ YÖNETİMİ ---
+
+        function switchScreen(id) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.style.display = 'none';
+                screen.classList.remove('active');
+            });
+            document.getElementById(id).style.display = 'flex';
+            document.getElementById(id).classList.add('active');
+        }
+
+        function startProtocol() {
+            currentQIndex = 0;
+            userAnswers = [];
+            switchScreen('question-screen');
+            showQuestion();
+        }
+
+        function showQuestion() {
+            if (currentQIndex < QUESTIONS.length) {
+                document.getElementById('question-text').innerText = QUESTIONS[currentQIndex].text;
+                document.getElementById('user-input').value = "";
+                document.getElementById('user-input').focus();
+                
+                // Progress Bar
+                const percent = ((currentQIndex) / QUESTIONS.length) * 100;
+                document.getElementById('progress').style.width = percent + "%";
+            } else {
+                finishQuiz();
+            }
+        }
+
+        function nextQuestion() {
+            const input = document.getElementById('user-input').value.trim();
+            if (input.length < 2) {
+                alert("SİSTEM UYARISI: Veri yetersiz. Bir şeyler yazmalısın.");
+                return;
+            }
+
+            userAnswers.push({
+                id: QUESTIONS[currentQIndex].id,
+                length: input.length
+            });
+
+            currentQIndex++;
+            showQuestion();
+        }
+
+        function finishQuiz() {
+            switchScreen('loading-screen');
+            setTimeout(analyzeShadow, 2500); // 2.5 saniye analiz süsü
+        }
+
+        function analyzeShadow() {
+            // ALGORİTMA: En uzun cevap verilen soruyu bul (Savunma Mekanizması)
+            let maxLen = 0;
+            let dominantShadowID = QUESTIONS[0].id; 
+
+            userAnswers.forEach(ans => {
+                if (ans.length > maxLen) {
+                    maxLen = ans.length;
+                    dominantShadowID = ans.id;
+                } else if (ans.length === maxLen) {
+                    if (Math.random() > 0.5) dominantShadowID = ans.id; // Eşitlik bozma
+                }
+            });
+
+            const result = SHADOW_ARCHETYPES[dominantShadowID];
+            const userId = "SHD-" + Math.floor(Math.random() * 90000 + 10000);
+
+            // Sonuçları Ekrana Bas
+            document.getElementById('user-id').innerText = userId;
+            document.getElementById('archetype-title').innerText = result.title;
+            document.getElementById('shadow-bio-text').innerText = result.desc;
+            document.getElementById('courage-bar').style.width = result.stats.courage + "%";
+            document.getElementById('loyalty-bar').style.width = result.stats.loyalty + "%";
+
+            switchScreen('result-screen');
+        }
+
+        // --- VİRAL TWITTER PAYLAŞIM ALGORİTMASI ---
+        function shareOnTwitter() {
+            const archetype = document.getElementById('archetype-title').innerText;
+            
+            // Havalı Paylaşım Metinleri
+            const tweets = [
+                `Massalverse simülasyonunda maskem düştü. 🩸\n\nGölge Kodum: ${archetype}\n\nGerçek yüzünle yüzleşmeye cesaretin var mı?\n\n🔗`,
+                `⚠️ SİSTEM UYARISI: Ruhsal yazılımımda hata tespit edildi.\n\nArıza Kodu: ${archetype}\n\nMassalverse acımıyor. Senin gölgen ne?\n\n🔗`,
+                `Karanlık tarafımla tanıştım. Hoş biri değil.\n\nSonuç: ${archetype}\n\nBu testi yapmadan kendini tanıdığını sanma.\n\n🔗`
+            ];
+
+            // Rastgele birini seç
+            const randomTweet = tweets[Math.floor(Math.random() * tweets.length)];
+            
+            // Site adresi (Kendi domainini buraya yaz)
+            const siteUrl = "https://massalverse.com"; 
+            const hashtags = "Massalverse,GölgeBiyografi,ShadowWork";
+            
+            const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(randomTweet)}&url=${encodeURIComponent(siteUrl)}&hashtags=${hashtags}`;
+
+            window.open(twitterUrl, '_blank');
+        }
+
+        // Enter tuşu ile gönder
+        document.getElementById('user-input').addEventListener("keypress", function(event) {
+            if (event.key === "Enter") nextQuestion();
+        });
+
+        // Başlangıç
+        document.addEventListener('DOMContentLoaded', () => {
+             switchScreen('start-screen');
+        });
+    </script>
+</body>
+</html>

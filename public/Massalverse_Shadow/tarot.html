@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Massalverse - Glitch Tarot</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Orbitron:wght@500;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="tarot.css">
+    
+    <style>
+        /* CSS: Geri Dön Butonu Stili (Eğer tarot.css'te yoksa, gömüyoruz) */
+        .btn-back-to-main {
+            background-color: transparent;
+            border: 1px solid #00f3ff; /* Glitch mavisini kullanıyoruz */
+            color: #00f3ff;
+            margin-top: 10px; /* Diğer butonlarla ayır */
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            width: 100%;
+            display: block; /* Tam genişlikte olsun */
+            text-decoration: none; /* Link stili */
+            text-align: center;
+            font-family: 'Orbitron', sans-serif;
+        }
+        .btn-back-to-main:hover {
+            background-color: rgba(0, 243, 255, 0.1);
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="overlay-grid"></div>
+
+    <div class="container">
+        <header>
+            <h1 class="glitch-text" data-text="GLITCH TAROT">GLITCH TAROT</h1>
+            <p class="subtitle">Sistem senin için hangi hatayı öngördü?</p>
+            <div class="instruction">Tek bir kart seç. Bedelini öde.</div>
+            
+            <a href="../index.html" class="btn-back-to-main" style="margin-top: 20px;">ANA MENÜYE DÖN</a>
+
+        </header>
+
+        <div class="tarot-grid" id="card-grid">
+            </div>
+
+        <div id="reading-panel" class="reading-panel hidden">
+            <h2 id="card-title">SYSTEM FAILURE</h2>
+            <div class="card-visual-large" id="card-visual"></div>
+            <p id="card-desc" class="oracle-text">...</p>
+            
+            <div class="cost-matrix">
+                <div class="cost-item">
+                    <span>CESARET</span>
+                    <span id="cost-courage" class="val">+0</span>
+                </div>
+                <div class="cost-item">
+                    <span>İTİBAR</span>
+                    <span id="cost-rep" class="val">-0</span>
+                </div>
+            </div>
+
+            <button class="btn-reset" onclick="location.reload()">SİSTEMİ YENİLE</button>
+            
+            <a href="../index.html" class="btn-back-to-main">ANA MENÜYE DÖN</a>
+
+        </div>
+    </div>
+
+    <script src="tarot.js"></script>
+</body>
+</html>

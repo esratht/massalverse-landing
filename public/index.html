@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Massalverse - Ana Sistem</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Orbitron:wght@500;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="scan-line"></div>
+
+    <div class="container">
+        <header>
+            <div class="logo-icon"></div>
+            <h1 class="main-title">MASSALVERSE</h1>
+            <p class="subtitle">Kendi Masalına Uyan!</p>
+            <div class="divider">
+                <span class="dot"></span>
+            </div>
+        </header>
+
+        <div class="terminal-box">
+            <div class="terminal-header">
+                <span class="circle red"></span>
+                <span class="circle yellow"></span>
+                <span class="circle green"></span>
+                <span class="terminal-title">> SYSTEM_ROOT</span></span>
+            </div>
+            <div class="terminal-content">
+                <p>> Sistem başlatılıyor...</p>
+                <p>> Bağlantı: Ana Sunucu <span class="status-active">[ONLINE]</span></p>
+                <p>> Gizlilik Protokolleri <span class="status-ready">[AKTİF]</span></p>
+                <br>
+                <p class="blink">> Lütfen giriş protokolünü seçin_</p>
+            </div>
+        </div>
+         <a href="/rpg" className="relative group inline-block">
+  <div className="absolute -inset-1 bg-gradient-to-r from-pink-600 to-purple-600 blur opacity-75 group-hover:opacity-100 transition duration-200"></div>
+  <button className="relative px-8 py-4 bg-black border border-pink-500 text-pink-500 font-mono font-bold uppercase tracking-widest hover:text-white transition">
+    [ SİMÜLASYONA GİR ]
+  </button>
+</a>
+        <div class="modules-grid">
+            
+            <a href="manifesto.html" class="module-card main-module">
+                <div class="icon">💠</div>
+                <div class="title">MANİFESTO</div>
+                <div class="desc">SİMÜLASYON ÇEKİRDEĞİ</div>
+            </a>
+
+            <a href="Massalverse_Shadow/shadow.html" class="module-card">
+                <div class="icon">👁️</div>
+                <div class="title">GÖLGE BİO</div>
+                <div class="desc">YÜZLEŞME PROTOKOLÜ</div>
+            </a>
+
+            <a href="Massalverse_Shadow/tarot.html" class="module-card">
+                <div class="icon">🃏</div>
+                <div class="title">GLITCH TAROT</div>
+                <div class="desc">SİSTEM HATALARI</div>
+            </a>
+
+            <a href="Massalverse_Shadow/zodiac.html" class="module-card">
+                <div class="icon">♈</div>
+                <div class="title">ZODIAC LOG</div>
+                <div class="desc">GÖLGE YANSIMASI</div>
+            </a>
+            
+            <a href="Massalverse_Shadow/mars.html" class="module-card" style="border-color: #ff4500;">
+                <div class="icon">🔥</div>
+                <div class="title">MARS VURUCU</div>
+                <div class="desc">7 GÜN EYLEM SÖZLEŞMESİ</div>
+            </a>
+
+        </div>
+
+        <div style="margin-top: 30px;">
+            <a href="Massalverse_Shadow/admin.html" style="text-decoration:none; color:#333; font-size:0.7rem; font-family:'Orbitron'; transition:0.3s;" onmouseover="this.style.color='#ff003c'" onmouseout="this.style.color='#333'">🔒 GOD MODE</a>
+        </div>
+
+        <div class="legal-footer">
+            <span class="legal-link" onclick="openModal('modal-disclaimer')">⚠️ YASAL UYARI & EĞLENCE BİLDİRİMİ</span>
+            <span class="legal-link" onclick="openModal('modal-kvkk')">🛡️ KVKK VE AÇIK RIZA</span>
+        </div>
+
+        <div class="footer-status" style="margin-top: 10px;">SYSTEM STATUS: ONLINE // v3.2</div>
+    </div>
+
+    <div id="modal-disclaimer" class="legal-overlay">
+        <div class="legal-box">
+            <span class="close-modal" onclick="closeModals()">×</span>
+            <h2>⚠️ SİMÜLASYON UYARISI</h2>
+            <p><strong>DİKKAT YOLCU:</strong></p>
+            <p>1. Massalverse platformunda sunulan içerikler (Gölge Biyografi, Tarot, Astrolojik Analizler ve Ma Simülasyonu) tamamen <strong>EĞLENCE ve KURGU</strong> amaçlıdır.</p>
+            <p>2. Burada sunulan "Berat"lar, analizler veya tavsiyeler; tıbbi, psikolojik, hukuki veya finansal yatırım tavsiyesi <strong>DEĞİLDİR</strong>.</p>
+            <p>3. "Pişmanlık Virüsü", "Altın Onarım" gibi terimler sanatsal metafordur. Gerçek bir tıbbi durumu yansıtmaz.</p>
+            <p>4. Psikolojik rahatsızlık hissettiğiniz durumlarda lütfen profesyonel bir uzmana başvurunuz. Simülasyon sadece felsefi bir deneyim sunar.</p>
+        </div>
+    </div>
+
+    <div id="modal-kvkk" class="legal-overlay">
+        <div class="legal-box">
+            <span class="close-modal" onclick="closeModals()">×</span>
+            <h2>🛡️ KVKK & AÇIK RIZA METNİ</h2>
+            <p><strong>VERİ GİZLİLİĞİ VE İŞLEME POLİTİKASI:</strong></p>
+            <p>Massalverse Simülasyonu'na ("Sistem") giriş yaparak aşağıdaki şartları kabul etmiş sayılırsınız:</p>
+            <ul>
+                <li><strong>1. Veri İşleme:</strong> Simülasyon dahilinde paylaştığınız Doğum Tarihi, Doğum Yeri ve İsim verileri, sadece "Sistem Baskısı Kodu" ve "Arketip" hesaplaması için anlık olarak işlenir.</li>
+                <li><strong>2. Veri Saklama:</strong> Girilen veriler, Yapay Zeka (Ma) ile yapılan sohbet süresince geçici bellekte tutulur. Sayfa yenilendiğinde veya simülasyon sonlandığında <strong>TÜM VERİLER SİLİNİR</strong>. Kalıcı veritabanı kaydı tutulmamaktadır.</li>
+                <li><strong>3. Üçüncü Taraflar:</strong> Verileriniz, analiz amacıyla anonim olarak AI sağlayıcısı (Anthropic API) ile anlık paylaşılır ancak pazarlama amacıyla üçüncü şahıslara satılmaz.</li>
+                <li><strong>4. Açık Rıza:</strong> "Simülasyona Gir" veya "Gönder" butonlarına tıklayarak, bu verilerin yukarıdaki amaçlarla işlenmesine <strong>AÇIK RIZA</strong> verdiğinizi beyan edersiniz.</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function openModal(id) {
+            document.getElementById(id).classList.add('active');
+        }
+        function closeModals() {
+            document.querySelectorAll('.legal-overlay').forEach(m => m.classList.remove('active'));
+        }
+        // Dışarı tıklayınca kapat
+        window.onclick = function(event) {
+            if (event.target.classList.contains('legal-overlay')) {
+                closeModals();
+            }
+        }
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mars Vurucu Sözleşmesi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Orbitron:wght@500;900&display=swap" rel="stylesheet">
+    <style>
+        /* Mars Özel Stili (Kırmızı/Siyah/Neon) */
+        body { 
+            background-color: #050000; color: #ff4500; 
+            display: flex; justify-content: center; align-items: center; 
+            font-family: 'Fira Code', monospace;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container { 
+            width: 95%; max-width: 600px; 
+            display: flex; flex-direction: column; 
+        }
+        /* Ekran Yönetimi */
+        .screen { 
+            display: none; 
+            flex-direction: column; 
+            padding: 40px 20px; 
+            border: 2px solid #ff4500; 
+            background: rgba(50, 0, 0, 0.2); 
+            text-align: center;
+            box-shadow: 0 0 20px rgba(255, 69, 0, 0.2);
+        }
+        .screen.active { display: flex; animation: fadeIn 0.5s ease; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        h1 { 
+            font-family: 'Orbitron'; color: #fff; margin-bottom: 20px; 
+            text-shadow: 0 0 10px rgba(255, 69, 0, 0.5);
+            font-size: 1.5rem;
+        }
+        
+        p { line-height: 1.5; color: #ccc; margin-bottom: 15px; }
+
+        /* Butonlar */
+        .unit-display { font-size: 1.2rem; font-weight: bold; color: #00f3ff; margin: 20px 0; border: 1px dashed #00f3ff; padding: 10px; }
+        
+        .btn-mars { 
+            background: #ff4500; color: #000; padding: 15px 30px; 
+            font-weight: bold; cursor: pointer; border: none; 
+            margin-top: 15px; font-family: 'Orbitron';
+            transition: all 0.3s;
+        }
+        .btn-mars:hover { background: #fff; box-shadow: 0 0 15px #ff4500; transform: scale(1.02); }
+        
+        .btn-outline, .btn-back { 
+            background: transparent; border: 1px solid #555; color: #555; 
+            padding: 10px 20px; margin-top: 10px; cursor: pointer; text-decoration: none; 
+            display: block; text-align: center; font-size: 0.8rem;
+            transition: all 0.3s;
+        }
+        .btn-outline:hover, .btn-back:hover { color: #fff; border-color: #fff; }
+
+        .action-container { display: flex; flex-direction: column; align-items: center; width: 100%; }
+        
+        /* Scanlines */
+        .scan-lines {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1));
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div class="scan-lines"></div>
+    <div class="container">
+        
+        <div id="welcome-screen" class="screen active">
+            <h1>MARS VURUCU SÖZLEŞMESİ</h1>
+            <p style="color: #ff4500;">**PROTOKOL: NO REGRET MACHINE**</p>
+            <p>Bu modül, Pasifliği ve 'Keşke'leri keser. **7 günlük ardışık eylem döngüsü** gerektirir. Bir gün bile atlarsan, sayaç sıfırlanır.</p>
+            <p>Başarı, sana **EYLEM BİRİMİ (AU)** kazandırır. Bu birimler irade gücünün dijital kanıtıdır.</p>
+            
+            <div class="action-container">
+                <button class="btn btn-mars" onclick="switchScreen('contract-screen')">SÖZLEŞMEYİ İMZALA VE BAŞLAT</button>
+                <a href="/index.html" class="btn-outline">ANA MENÜYE DÖN</a>
+            </div>
+        </div>
+
+        <div id="contract-screen" class="screen">
+            <a href="/index.html" class="btn btn-outline">ANA MENÜYE DÖN</a>
+            
+            <h1>MARS EYLEM TAKİBİ</h1>
+            
+            <p style="color: #00f3ff; margin-top: 10px; font-weight: bold; text-align: left;">GÖREV TANIMI:</p>
+            <p style="font-size: 0.9rem; text-align: left;">Bugün, konfor alanından çıkıp "Bunu yapmam lazım ama korkuyorum/üşeniyorum" dediğin o tek eylemi yaptın mı?</p>
+            <p style="font-size: 0.8rem; color: #ff9999; text-align: left;">(Örn: Zor konuşma, Hayır demek, Ertelemeyi bitirmek.)</p>
+            
+            <div id="contract-status" class="unit-display">VERİLER YÜKLENİYOR...</div>
+            
+            <div class="action-container">
+                <button class="btn btn-mars" onclick="performMarsActionAndDisplay()">EVET, EYLEMİ KAYDET</button>
+                <button class="btn btn-outline" onclick="resetContractAlert()">SÖZLEŞMEYİ SIFIRLA (Pes Et)</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- AYARLAR ---
+        const TOTAL_DAYS = 7; 
+        const CONTRACT_KEY = 'marsContractStatus';
+        const UNITS_PER_CONTRACT = 10; 
+
+        // --- MANTIK FONKSİYONLARI ---
+
+        function getContractStatus() {
+            const stored = localStorage.getItem(CONTRACT_KEY);
+            if (stored) {
+                return JSON.parse(stored);
+            }
+            // Başlangıç Durumu
+            return {
+                currentDay: 0, 
+                lastActionDate: null, 
+                totalUnits: 0, 
+                contractActive: true 
+            };
+        }
+
+        function saveContractStatus(status) {
+            localStorage.setItem(CONTRACT_KEY, JSON.stringify(status));
+        }
+
+        function resetContract(status) {
+            status.currentDay = 0;
+            status.lastActionDate = null;
+            status.contractActive = true;
+            saveContractStatus(status);
+            return {
+                message: "İHLAL TESPİTİ: Eylemsizlik nedeniyle sözleşme yandı. Başa dönüldü.",
+                status: 'reset',
+                units: status.totalUnits
+            };
+        }
+
+        function performMarsAction() {
+            let status = getContractStatus();
+            const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+
+            // HATA: Bugün zaten yapıldıysa
+            if (status.lastActionDate === today) {
+                return { 
+                    message: `HATA: ${status.currentDay}. Gün eylemi bugün zaten kaydedildi. Yarın gel.`, 
+                    status: 'error',
+                    units: status.totalUnits
+                };
+            }
+
+            // İHLAL KONTROLÜ: Tarih farkı 1 günden fazlaysa
+            if (status.lastActionDate !== null && status.currentDay > 0) {
+                const lastDate = new Date(status.lastActionDate);
+                const diffTime = Math.abs(new Date(today).getTime() - lastDate.getTime());
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+
+                if (diffDays > 1) {
+                    return resetContract(status); // Zincir koptu
+                }
+            }
+
+            // BAŞARI: İlerleme
+            status.currentDay++;
+            status.lastActionDate = today;
+            
+            // SÖZLEŞME BİTİŞİ
+            if (status.currentDay >= TOTAL_DAYS) {
+                status.totalUnits += UNITS_PER_CONTRACT; 
+                status.contractActive = false;
+                status.currentDay = 0; 
+                status.lastActionDate = null;
+                status.contractActive = true; 
+                
+                saveContractStatus(status);
+                return { 
+                    message: `GÖREV TAMAMLANDI! +${UNITS_PER_CONTRACT} Eylem Birimi Hesaba Yattı. Yeni Döngü Hazır.`, 
+                    status: 'complete',
+                    units: status.totalUnits
+                };
+            } else {
+                saveContractStatus(status);
+                return { 
+                    message: `BAŞARI: ${status.currentDay}. Gün Tamam. Zinciri Kırma.`, 
+                    status: 'success',
+                    units: status.totalUnits
+                };
+            }
+        }
+
+        // --- ARAYÜZ FONKSİYONLARI ---
+
+        function switchScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            
+            if (id === 'contract-screen') {
+                displayInitialStatus();
+            }
+        }
+        
+        function displayInitialStatus() {
+            const status = getContractStatus();
+            const statusElement = document.getElementById('contract-status');
+            
+            let htmlContent = '';
+            
+            if (status.currentDay === 0) {
+                htmlContent = `<span style="color: #fff;">DURUM: Beklemede</span><br>GÜN 1'i başlatmak için butona bas.`;
+            } else {
+                htmlContent = `<span style="color: #00f3ff;">DURUM: AKTİF</span><br>${status.currentDay} / ${TOTAL_DAYS} GÜN TAMAMLANDI.`;
+            }
+            
+            statusElement.innerHTML = `${htmlContent}<br><br><span style="color: gold;">TOPLAM AU: ${status.totalUnits}</span>`;
+        }
+
+        function performMarsActionAndDisplay() {
+            const result = performMarsAction();
+            const statusElement = document.getElementById('contract-status');
+            
+            let color = '#00f3ff';
+            if (result.status === 'error') color = '#ff4500'; 
+            if (result.status === 'reset') color = '#ff0000'; 
+            if (result.status === 'complete') color = '#00ff00'; 
+            
+            statusElement.innerHTML = `<span style="color: ${color}; font-weight: bold;">${result.message}</span><br><br><span style="color: gold;">TOPLAM AU: ${result.units}</span>`;
+            
+            if (result.status === 'reset' || result.status === 'complete') {
+                setTimeout(() => displayInitialStatus(), 3000);
+            }
+        }
+
+        function resetContractAlert() {
+            if(confirm("DİKKAT! Pes etmek üzeresin. Tüm 7 günlük ilerlemen silinecek (Toplam AU kalır). Emin misin?")) {
+                 let status = getContractStatus();
+                 status.currentDay = 0;
+                 status.lastActionDate = null;
+                 saveContractStatus(status);
+                 displayInitialStatus();
+                 alert("Sözleşme sıfırlandı. İstediğin zaman tekrar başlayabilirsin.");
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const status = getContractStatus();
+            if (status.currentDay > 0) {
+                switchScreen('contract-screen');
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,195 @@
+/* --- GENEL AYARLAR --- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: #000;
+    color: #0f0; /* Matrix Yeşili */
+    font-family: 'Fira Code', monospace;
+    height: 100vh;
+    overflow: hidden; /* Sayfa kaymasın, sadece kart kaymalı */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* CRT Ekran Efekti */
+.scan-lines {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+    background-size: 100% 4px; z-index: 10; pointer-events: none;
+}
+
+.container {
+    width: 95%; max-width: 600px;
+    height: 90vh; /* Ekranın %90'ını kaplasın */
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Ekran Geçişleri */
+.screen {
+    position: absolute; width: 100%; height: 100%;
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    opacity: 0; pointer-events: none; transition: opacity 0.5s;
+    background: #000; /* Ekranlar üst üste binmesin */
+}
+.screen.active { opacity: 1; pointer-events: all; z-index: 5; }
+
+/* Başlıklar */
+.glitch-title {
+    font-family: 'Orbitron'; font-size: 2.5rem; color: #ff003c;
+    text-shadow: 2px 2px 0px #fff; text-align: center;
+    margin-bottom: 10px;
+}
+.subtitle { color: #888; margin-bottom: 20px; text-align: center; font-size: 0.9rem; }
+
+.warning-box {
+    border: 1px solid #ff003c; background: rgba(255, 0, 60, 0.1);
+    color: #ff003c; padding: 15px; font-size: 0.8rem;
+    margin-bottom: 30px; text-align: center; max-width: 80%;
+}
+
+/* Butonlar */
+.btn {
+    padding: 15px 30px; font-family: 'Orbitron'; font-weight: bold;
+    cursor: pointer; border: none; transition: 0.3s; margin: 5px;
+}
+.btn-danger { background: #ff003c; color: #000; }
+.btn-danger:hover { background: #fff; box-shadow: 0 0 15px #fff; }
+
+.btn-next { background: #00f3ff; color: #000; margin-top: 20px; }
+.btn-next:hover { background: #fff; }
+
+.btn-outline { background: transparent; border: 1px solid #555; color: #555; }
+.btn-outline:hover { border-color: #fff; color: #fff; }
+
+.btn-share { 
+    background: #1DA1F2; color: #fff; /* Twitter Mavisi */
+    box-shadow: 0 0 10px rgba(29, 161, 242, 0.4);
+}
+.btn-share:hover { background: #fff; color: #1DA1F2; }
+
+/* Soru Ekranı */
+.question-text { font-size: 1.2rem; text-align: center; margin-bottom: 30px; min-height: 60px; }
+.terminal-input {
+    background: transparent; border: none; border-bottom: 2px solid #00f3ff;
+    color: #00f3ff; font-size: 1.1rem; padding: 10px; width: 80%;
+    font-family: 'Fira Code'; text-align: center; outline: none;
+}
+.terminal-input:focus { border-color: #fff; }
+.terminal-input.blink { animation: blink-red 0.5s 2; }
+
+@keyframes blink-red { 50% { border-color: red; color: red; } }
+
+.progress-bar { width: 80%; height: 2px; background: #333; margin-bottom: 40px; }
+.fill { height: 100%; background: #00f3ff; width: 0%; transition: 0.3s; }
+
+/* Yükleniyor */
+.loader { display: flex; gap: 5px; margin-bottom: 20px; }
+.bar { width: 10px; height: 40px; background: #ff003c; animation: load 1s infinite; }
+.bar:nth-child(2) { animation-delay: 0.1s; }
+.bar:nth-child(3) { animation-delay: 0.2s; }
+@keyframes load { 0%, 100% { height: 40px; } 50% { height: 70px; } }
+
+/* --- SONUÇ KARTI (DÜZELTİLEN KISIM) --- */
+.shadow-card {
+    border: 2px solid #ff003c;
+    background: rgba(10, 0, 0, 0.9);
+    width: 100%;
+    /* Kartın boyutu ekranı taşmasın */
+    max-height: 75vh; 
+    display: flex;
+    flex-direction: column;
+    padding: 2px; /* İç kenar */
+    box-shadow: 0 0 30px rgba(255, 0, 60, 0.2);
+}
+
+.card-header {
+    background: #ff003c; color: #000; padding: 10px;
+    display: flex; justify-content: space-between; font-weight: bold; font-size: 0.8rem;
+    flex-shrink: 0; /* Başlık küçülmesin */
+}
+
+/* Metin Alanı (Scroll Eklendi) */
+.card-body {
+    padding: 20px;
+    overflow-y: auto; /* Metin uzunsa kaydır */
+    flex-grow: 1; /* Kalan alanı kapla */
+}
+
+.card-body h3 { 
+    color: #ff003c; margin-bottom: 15px; font-family: 'Orbitron'; text-align: center; 
+}
+
+.bio-text {
+    font-size: 0.9rem; line-height: 1.6; color: #e0e0e0;
+    white-space: pre-line; /* Satır boşluklarını koru */
+}
+
+.card-footer {
+    padding: 10px; text-align: right; font-size: 0.6rem; color: #555;
+    border-top: 1px solid #333;
+    flex-shrink: 0;
+}
+
+/* İstatistik Çubukları */
+.stats { margin-top: 20px; border-top: 1px dashed #333; padding-top: 15px; }
+.stat-box { margin-bottom: 10px; }
+.stat-box span { font-size: 0.7rem; color: #888; display: block; margin-bottom: 3px; }
+.stat-bar { width: 100%; height: 5px; background: #222; }
+.stat-bar div { height: 100%; background: #ff003c; width: 0%; }
+
+/* Aksiyon Butonları */
+.action-buttons {
+    margin-top: 15px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    flex-shrink: 0; /* Butonlar asla ezilmesin */
+}
+
+/* Mobil Uyumluluk */
+@media (max-width: 600px) {
+    .glitch-title { font-size: 1.8rem; }
+    .shadow-card { max-height: 70vh; }
+    .bio-text { font-size: 0.8rem; }
+    .btn { padding: 10px 20px; font-size: 0.8rem; }
+}
+/* --- DİJİTAL NABIZ (SES DALGASI) --- */
+.system-pulse-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px; /* Çubuklar arası boşluk */
+    height: 40px; /* Avatar yüksekliği */
+    margin-bottom: 25px; /* Başlıkla mesafe */
+}
+
+.pulse-bar {
+    width: 6px;
+    height: 100%;
+    background-color: #00f3ff; /* Neon Mavi */
+    box-shadow: 0 0 10px #00f3ff;
+    border-radius: 4px;
+    animation: pulseWave 1s ease-in-out infinite;
+}
+
+/* Her çubuğa farklı gecikme ver ki dalga gibi görünsün */
+.pulse-bar:nth-child(1) { animation-delay: 0.0s; }
+.pulse-bar:nth-child(2) { animation-delay: 0.1s; }
+.pulse-bar:nth-child(3) { animation-delay: 0.2s; background-color: #ff00ff; box-shadow: 0 0 10px #ff00ff; /* Ortadaki Mor olsun */ }
+.pulse-bar:nth-child(4) { animation-delay: 0.1s; }
+.pulse-bar:nth-child(5) { animation-delay: 0.0s; }
+
+@keyframes pulseWave {
+    0%, 100% { height: 10%; opacity: 0.5; } /* Kısa ve sönük */
+    50% { height: 100%; opacity: 1; } /* Uzun ve parlak */
+}

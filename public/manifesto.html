@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Massalverse - Manifesto</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Orbitron:wght@500;900&family=Cinzel:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="manifesto.css">
+</head>
+<body>
+
+    <div class="matrix-bg"></div>
+
+    <div class="sim-container">
+
+        <div class="sim-header">
+            <h1>MA.EXE / MANİFESTO</h1>
+            <div>
+                <span class="dot green"></span>
+                <span class="dot green"></span>
+                <a href="index.html" class="exit-btn">X</a>
+            </div>
+        </div>
+
+        <div id="chat-box" class="chat-box">
+            <div class="message ai-msg">
+                <p>Merhaba Yolcu. Sen Pişmanlık Virüsü'nün etkisindesin. Masalına uyanmadan önce, yükünü taşımayı kabul etmelisin.</p>
+            </div>
+            <div class="message ai-msg">
+                <p>Bu yükü taşımayı **kabul ediyor musun?** (Evet / Tereddüt)</p>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <input type="text" id="user-input" placeholder="Yazmaya başla...">
+            <button onclick="sendMessage()">GÖNDER</button>
+        </div>
+    </div>
+
+
+    <div id="birth-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2>KİM KONTROL EDİYOR?</h2>
+            <p>Bilinçaltı haritanı oluşturmak için sana ait ham verilere ihtiyacım var. Kim olduğunu unuttun, ama sistem hatırliyor.</p>
+            <form id="birth-form">
+                <input type="text" id="b-name" placeholder="Adın" required>
+                <input type="date" id="b-date" placeholder="Doğum Tarihi" required>
+                <input type="time" id="b-time" placeholder="Doğum Saati (hh:mm)" required>
+                <input type="text" id="b-city" placeholder="Doğum Yeri (Şehir)" required>
+                <button type="submit" class="btn-glow">VERİLERİ YÜKLE (Gölgeni Çağır)</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="berat-modal" class="modal hidden">
+        <div class="berat-paper">
+            <span class="dot red" style="position: absolute; top: 15px; right: 15px;"></span>
+            <span class="dot green" style="position: absolute; top: 15px; right: 30px;"></span>
+            
+            <h1 id="berat-title">KADER BERATI</h1>
+            <p style="font-size: 0.8rem; margin-top: 5px;">Dosya No: <span id="doc-id">...</span></p>
+
+            <div class="berat-body">
+                <p><strong>Yolcu Adı:</strong> <span id="res-name">...</span></p>
+                <p><strong>Arketip Kodu:</strong> <span id="res-archetype">...</span></p>
+                <hr style="border: 1px dashed #ccc; margin: 15px 0;">
+                
+                <h3 style="color: #800; font-family: 'Orbitron'; margin-top: 15px;">KİŞİSEL BASKI KODLARI</h3>
+                
+                <p><strong>Zodiac/Gölge Kodu:</strong> <span id="res-almuten">...</span></p> 
+                <p><strong>Ana Odak (Stelyum):</strong> <span id="res-focus">...</span></p>
+                <p><strong>Gerilim Seviyesi:</strong> <span id="res-tension">...</span></p>
+                <p><strong>Zayıf Nokta (Keşke):</strong> <span id="res-weakness">...</span></p>
+                
+                <hr style="border: 1px dashed #ccc; margin: 15px 0;">
+
+                <h3 style="color: #800; font-family: 'Orbitron'; margin-top: 15px;">KADER KARARNAMESİ</h3>
+                <p id="res-destiny" class="destiny-text" style="color: #2a2a2a;"></p>
+            </div>
+
+            <div class="berat-footer">
+                <p>* Bu belge, Massalverse Algoritması tarafından oluşturulmuştur ve haritalı ruhunuzun yansımasını içerir.</p>
+            </div>
+            
+            <div class="berat-footer-fixed">
+                <button class="btn-close" onclick="beratModal.classList.add('hidden')">KODU SİSTEME İŞLE</button>
+            </div>
+        </div>
+    </div>
+    <div class="system-pulse-container">
+    <div class="pulse-bar"></div>
+    <div class="pulse-bar"></div>
+    <div class="pulse-bar"></div>
+    <div class="pulse-bar"></div>
+    <div class="pulse-bar"></div>
+</div>
+    
+    <script src="manifesto.js"></script>
+</body>
+</html>

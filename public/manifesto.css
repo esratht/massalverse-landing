@@ -1,0 +1,292 @@
+/* --- TEMEL AYARLAR --- */
+body {
+    background-color: #0d1a26;
+    color: #00ff6a; /* Yeşil Neon */
+    font-family: 'Fira Code', monospace;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    overflow: hidden; /* Ana kaydırmayı engelle */
+}
+
+/* --- ARKA PLAN VE ANİMASYON --- */
+.matrix-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('https://i.imgur.com/r6bK6u2.gif') repeat; /* Matrix Efekti */
+    opacity: 0.1;
+    z-index: -1;
+}
+
+/* --- ANA KAPSAYICI --- */
+.sim-container {
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid #00ff6a;
+    box-shadow: 0 0 15px #00ff6a;
+    width: 90%;
+    max-width: 650px;
+    height: 80vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    padding: 10px;
+}
+
+/* --- BAŞLIK ALANI --- */
+.sim-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 10px;
+    border-bottom: 1px solid #00ff6a;
+    margin-bottom: 10px;
+}
+.sim-header h1 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.2rem;
+    color: #fff;
+    text-shadow: 0 0 5px #00ff6a;
+}
+.dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-left: 5px;
+}
+.red { background-color: #ff003c; }
+.green { background-color: #00ff6a; }
+.exit-btn {
+    color: #ff003c;
+    text-decoration: none;
+    font-weight: bold;
+    margin-left: 10px;
+    cursor: pointer;
+}
+
+/* --- SOHBET ALANI --- */
+.chat-box {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 10px;
+    /* Kaydırma çubuğu stili (Webkit tabanlı tarayıcılar için) */
+    scrollbar-width: thin;
+    scrollbar-color: #00ff6a #1a1a1a;
+}
+.chat-box::-webkit-scrollbar {
+    width: 8px;
+}
+.chat-box::-webkit-scrollbar-thumb {
+    background-color: #00ff6a;
+    border-radius: 4px;
+}
+.chat-box::-webkit-scrollbar-track {
+    background: #1a1a1a;
+}
+
+
+/* --- MESAJ STİLLERİ --- */
+.message {
+    margin-bottom: 10px;
+    padding: 8px 12px;
+    border-radius: 5px;
+    font-size: 0.9rem;
+    max-width: 80%;
+}
+.ai-msg {
+    background-color: rgba(0, 255, 106, 0.1);
+    color: #00ff6a;
+    align-self: flex-start;
+    border-left: 3px solid #00ff6a;
+}
+.user-msg {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    align-self: flex-end;
+    margin-left: auto;
+    border-right: 3px solid #fff;
+}
+.message p {
+    margin: 0;
+}
+/* Typing Indicator (Görsel Animasyon için) */
+#typing-indicator {
+    background: rgba(0, 255, 106, 0.2);
+    display: flex;
+    align-items: center;
+    border-left: 3px solid #00ff6a;
+}
+
+/* --- GİRİŞ ALANI --- */
+.input-area {
+    display: flex;
+    padding: 10px 0;
+    border-top: 1px solid #00ff6a;
+}
+#user-input {
+    flex-grow: 1;
+    padding: 10px;
+    background: #000;
+    border: 1px solid #00ff6a;
+    color: #fff;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.9rem;
+}
+.input-area button {
+    background-color: #00ff6a;
+    color: #000;
+    border: none;
+    padding: 10px 15px;
+    margin-left: 5px;
+    font-family: 'Orbitron', sans-serif;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.input-area button:hover {
+    background-color: #fff;
+}
+
+/* --- MODAL (Pop-up Arka Planı) --- */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease;
+    
+    /* MODAL KAYDIRMA DÜZELTMESİ: Gerekirse tüm modal kaydırılabilir. */
+    overflow-y: auto; 
+}
+.modal.hidden {
+    display: none;
+}
+.modal:not(.hidden) {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* --- DOĞUM FORMU MODALI --- */
+.modal-content {
+    background: #1a1a1a;
+    border: 2px solid #ff003c;
+    padding: 30px;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 0 20px #ff003c;
+    font-family: 'Orbitron', sans-serif;
+}
+.modal-content h2 {
+    color: #ff003c;
+    margin-bottom: 15px;
+}
+.modal-content p {
+    color: #ccc;
+    font-family: 'Fira Code', monospace;
+    margin-bottom: 20px;
+}
+#birth-form input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    background: #000;
+    border: 1px solid #ff003c;
+    color: #fff;
+    font-family: 'Fira Code', monospace;
+}
+.btn-glow {
+    background-color: #ff003c;
+    color: #000;
+    border: none;
+    padding: 12px 20px;
+    margin-top: 10px;
+    font-family: 'Orbitron', sans-serif;
+    cursor: pointer;
+    transition: box-shadow 0.3s;
+}
+.btn-glow:hover {
+    box-shadow: 0 0 15px #ff003c;
+}
+
+
+/* --- BERAT MODALI STİLİ (Kaydırma Düzeltilmiş) --- */
+.berat-paper {
+    background: #eaddcf; color: #2a2a2a; 
+    width: 90%; max-width: 500px; 
+    padding: 40px;
+    font-family: 'Cinzel', serif; 
+    text-align: left;
+    position: relative; 
+    border: 10px double #2a2a2a;
+    background-image: url('https://www.transparenttextures.com/patterns/aged-paper.png');
+    
+    /* KRİTİK KAYDIRMA KURALI */
+    max-height: 90vh; /* Ekranın %90'ından fazla yer kaplamasın */
+    overflow-y: auto; /* İçerik taşarsa sadece kağıdın içinde kaydırma çubuğu çıksın */
+    padding-bottom: 80px; /* Sabit buton için boşluk bırak */
+    
+    /* Ekstra mobil uyum */
+    padding-left: 20px;
+    padding-right: 20px;
+    text-align: center; /* Genel metni ortala */
+}
+
+.berat-paper h1, .berat-paper h3 {
+    font-family: 'Cinzel', serif;
+    text-align: center;
+}
+.berat-body {
+    text-align: left;
+    padding: 10px 0;
+}
+.berat-body p {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+}
+.berat-footer {
+    font-size: 0.75rem;
+    color: #888;
+    margin-top: 20px;
+    text-align: center;
+    position: relative; /* Sabit footer'ın altında kalması için */
+}
+
+/* KRİTİK: SABİT KAPANMA BUTONU */
+.berat-footer-fixed {
+    position: sticky; 
+    bottom: 0;
+    width: 100%;
+    /* Butonun arka planı kağıt rengi olsun ki içerik üstünden kayarken alttaki buton örtülsün */
+    background: #eaddcf; 
+    padding: 10px 0;
+    border-top: 1px solid #ccc;
+    z-index: 10;
+    left: 0; /* Sticky position için */
+    right: 0; /* Sticky position için */
+    margin-top: auto; /* Altta kalmasını sağla */
+}
+
+.btn-close { 
+    margin-top: 0; 
+    background: #2a2a2a; 
+    color: #eaddcf; 
+    width: 100%; 
+    padding: 10px; 
+    cursor: pointer; 
+    font-family: 'Orbitron'; 
+    border: none;
+}

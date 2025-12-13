@@ -1,0 +1,158 @@
+/* GENEL AYARLAR */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    background-color: #020205; /* O beyaz arka planı siyah yap */
+    color: #e0e0e0;
+    font-family: 'Orbitron', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center; /* Dikey ortalama */
+    overflow-x: hidden;
+}
+
+/* Arka Plan Deseni */
+.overlay-grid {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background-image: 
+        linear-gradient(rgba(0, 255, 234, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 255, 234, 0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+    z-index: -1;
+}
+
+.container { width: 95%; max-width: 1200px; text-align: center; padding: 20px; }
+
+/* BAŞLIKLAR */
+header { margin-bottom: 40px; }
+
+.glitch-text {
+    font-size: 3rem; color: #fff; text-shadow: 2px 0 #00f3ff, -2px 0 #ff003c;
+    animation: glitch 3s infinite alternate;
+}
+
+.subtitle { color: #888; margin-top: 10px; font-size: 1rem; letter-spacing: 2px; }
+
+.instruction { 
+    color: #00f3ff; font-size: 0.8rem; margin-top: 20px; 
+    border: 1px solid #00f3ff; display: inline-block; padding: 5px 15px;
+    background: rgba(0, 243, 255, 0.1);
+}
+
+/* --- KART IZGARASI (GRID) --- */
+/* Bu kısım kartların alt alta değil yan yana durmasını sağlar */
+.tarot-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); /* Esnek kolonlar */
+    gap: 20px;
+    justify-content: center;
+    padding: 20px;
+    perspective: 1000px;
+}
+
+/* KART YAPISI */
+.tarot-card {
+    background: transparent;
+    height: 240px; /* Kart yüksekliği */
+    cursor: pointer;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+}
+
+.tarot-card:hover { transform: translateY(-10px); }
+.tarot-card.flipped { transform: rotateY(180deg) scale(1.1); z-index: 10; }
+.tarot-card.disabled { opacity: 0.1; pointer-events: none; filter: grayscale(100%); }
+
+.card-face {
+    position: absolute; width: 100%; height: 100%;
+    backface-visibility: hidden;
+    border-radius: 8px;
+    display: flex; justify-content: center; align-items: center;
+    box-shadow: 0 0 15px rgba(0,0,0,0.5);
+    overflow: hidden;
+}
+
+/* Kart Arkası */
+.card-back {
+    background: linear-gradient(135deg, #111 0%, #000 100%);
+    border: 1px solid #333;
+}
+.card-back::after {
+    content: '👁'; font-size: 3rem; color: #222; animation: pulse 2s infinite;
+}
+
+/* Kart Önü (Resimli) */
+.card-front {
+    background-color: #000;
+    border: 2px solid #ff003c;
+    transform: rotateY(180deg);
+    flex-direction: column;
+}
+
+.card-front.has-image {
+    background-size: cover;
+    background-position: center;
+    box-shadow: inset 0 0 80px rgba(0,0,0,0.9); /* Resmi biraz karart */
+}
+
+.card-name-overlay {
+    position: absolute; bottom: 15px; width: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff; font-size: 0.75rem; padding: 5px 0;
+    border-top: 1px solid #ff003c; border-bottom: 1px solid #ff003c;
+    text-transform: uppercase;
+}
+
+.planet-sign {
+    position: absolute; top: 10px; right: 10px;
+    font-size: 1.5rem; color: #ffb800;
+    text-shadow: 0 0 10px rgba(0,0,0,0.8);
+    z-index: 2;
+}
+
+/* --- OKUMA PANELİ --- */
+.reading-panel {
+    position: fixed; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%; max-width: 450px;
+    background: rgba(5, 5, 10, 0.95);
+    border: 1px solid #ff003c;
+    padding: 30px;
+    z-index: 100;
+    box-shadow: 0 0 100px rgba(255, 0, 60, 0.3);
+    text-align: center;
+    opacity: 1; transition: opacity 0.5s;
+}
+
+.reading-panel.hidden { 
+    opacity: 0; pointer-events: none; visibility: hidden; 
+}
+
+.card-visual-large {
+    height: 150px; margin: 20px 0;
+    border: 1px solid #333; border-radius: 5px; overflow: hidden;
+}
+
+.oracle-text {
+    font-family: 'Cinzel', serif; color: #ddd; 
+    line-height: 1.6; font-size: 1rem; margin-bottom: 20px;
+}
+
+.cost-matrix {
+    display: flex; justify-content: space-around; 
+    border-top: 1px dashed #333; padding-top: 15px;
+}
+.cost-item span { display: block; }
+.val { font-size: 1.5rem; font-weight: bold; color: #fff; margin-top: 5px; }
+
+.btn-reset {
+    margin-top: 20px; background: transparent; 
+    border: 1px solid #00f3ff; color: #00f3ff;
+    padding: 10px 20px; cursor: pointer; font-family: 'Orbitron', sans-serif;
+}
+.btn-reset:hover { background: #00f3ff; color: #000; }
+
+@keyframes glitch { 0% { opacity: 1; } 50% { opacity: 0.8; transform: skewX(2deg); } 100% { opacity: 1; } }
+@keyframes pulse { 0% { opacity: 0.3; } 50% { opacity: 0.7; } 100% { opacity: 0.3; } }

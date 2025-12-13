@@ -1,0 +1,155 @@
+/* GENEL AYARLAR */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    background-color: #030305;
+    color: #e0e0e0;
+    font-family: 'Orbitron', sans-serif;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Arka Plan */
+.star-grid {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background-image: radial-gradient(circle, #0a1520 0%, #000 80%);
+    z-index: -2;
+}
+
+.zodiac-container {
+    text-align: center;
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+}
+
+.neon-title {
+    font-size: 2.5rem; color: #00f3ff;
+    text-shadow: 0 0 15px rgba(0, 243, 255, 0.6);
+    letter-spacing: 5px; margin-bottom: 5px;
+    z-index: 20; /* En üstte kalsın */
+}
+.subtitle { color: #888; letter-spacing: 3px; font-size: 0.8rem; margin-bottom: 20px; z-index: 20; }
+
+/* --- ÇARK SİSTEMİ --- */
+.wheel-wrapper {
+    position: relative;
+    width: 600px; height: 600px; /* Alanı sabitledik */
+    display: flex; justify-content: center; align-items: center;
+}
+
+/* Dekoratif Halkalar */
+.ring {
+    position: absolute; border-radius: 50%;
+    border: 1px dashed rgba(0, 243, 255, 0.2);
+    box-shadow: 0 0 20px rgba(0, 243, 255, 0.1);
+    pointer-events: none; /* Tıklamayı engellemesin */
+}
+.outer-ring {
+    width: 100%; height: 100%;
+    border: 1px solid rgba(0, 243, 255, 0.1);
+    animation: spin-right 60s linear infinite;
+}
+.inner-ring {
+    width: 70%; height: 70%;
+    border: 1px dashed rgba(255, 0, 60, 0.2);
+    animation: spin-left 40s linear infinite;
+}
+
+/* İkonların Dizildiği Çember */
+.zodiac-circle {
+    position: absolute; width: 100%; height: 100%;
+    border-radius: 50%;
+    /* Tıklanabilir alan çakışmasını önlemek için pointer-events kapalı, 
+       ama butonlarda açık olacak */
+    pointer-events: none; 
+}
+
+/* --- BURÇ BUTONLARI (DÜZELTİLEN KISIM) --- */
+.sign-btn {
+    position: absolute;
+    /* Başlangıç noktası tam orta olsun */
+    left: 50%; 
+    top: 50%;
+    
+    width: 50px; height: 50px;
+    background: #0a0a0a;
+    border: 1px solid #00f3ff;
+    border-radius: 50%;
+    display: flex; justify-content: center; align-items: center;
+    font-size: 1.5rem; color: #00f3ff;
+    cursor: pointer;
+    transition: background 0.3s, box-shadow 0.3s, color 0.3s; /* Transformu kaldırdık! */
+    box-shadow: 0 0 10px rgba(0, 243, 255, 0.2);
+    z-index: 50; /* Halkaların üstünde olsun */
+    pointer-events: auto; /* Tıklanabilsin */
+}
+
+/* Hover Efekti (Büyüme yerine parlama yapıyoruz ki yerinden oynamasın) */
+.sign-btn:hover {
+    background: #00f3ff; color: #000;
+    box-shadow: 0 0 30px #00f3ff;
+    z-index: 60;
+}
+.sign-btn.active {
+    background: #ff003c; color: #fff; border-color: #ff003c;
+    box-shadow: 0 0 40px #ff003c;
+    z-index: 60;
+}
+
+/* --- MERKEZ EKRAN --- */
+.center-display {
+    position: absolute;
+    width: 280px; height: 280px; /* Biraz küçülttük ki butonlara yer kalsın */
+    background: rgba(0, 5, 10, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    padding: 20px;
+    z-index: 10;
+    backdrop-filter: blur(5px);
+    box-shadow: inset 0 0 50px rgba(0,0,0,0.8);
+    overflow: hidden;
+}
+
+.big-symbol { font-size: 4rem; color: #333; margin: 5px 0; transition: 0.5s; }
+.active-symbol { color: #ff003c; text-shadow: 0 0 20px #ff003c; }
+
+#sign-name { font-size: 1.2rem; color: #fff; font-family: 'Cinzel', serif; }
+.error-box {
+    background: rgba(255, 0, 60, 0.1);
+    border: 1px solid #ff003c;
+    padding: 2px 8px;
+    font-size: 0.6rem; color: #ff003c;
+    margin-bottom: 5px;
+    letter-spacing: 1px;
+}
+#error-desc {
+    font-size: 0.75rem; color: #aaa; line-height: 1.4;
+    text-align: center;
+}
+
+/* Tarama Çizgisi */
+.scan-line {
+    position: absolute; top: 0; left: 0; width: 100%; height: 5px;
+    background: rgba(0, 243, 255, 0.5);
+    box-shadow: 0 0 10px #00f3ff;
+    animation: scan 3s linear infinite;
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+.btn-back {
+    margin-top: 50px; background: transparent; border: none;
+    color: #555; font-family: 'Orbitron', sans-serif; cursor: pointer;
+    transition: 0.3s; z-index: 20;
+}
+.btn-back:hover { color: #00f3ff; }
+
+@keyframes spin-right { 100% { transform: rotate(360deg); } }
+@keyframes spin-left { 100% { transform: rotate(-360deg); } }
+@keyframes scan { 0% { top: 0; } 100% { top: 100%; } }

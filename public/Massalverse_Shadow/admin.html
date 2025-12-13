@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Massalverse - GOD MODE</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Orbitron:wght@900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+    <div class="crt-lines"></div>
+
+    <div id="login-screen" class="login-container">
+        <h1 class="glitch" data-text="SYSTEM_ROOT">SYSTEM_ROOT</h1>
+        <p>YETKİLİ GİRİŞİ GEREKLİ</p>
+        <div class="input-group">
+            <span class="prefix">root@massalverse:~#</span>
+            <input type="password" id="admin-pass" placeholder="ŞİFREYİ GİR" autocomplete="off">
+        </div>
+        <button onclick="checkAccess()" class="btn-access">ERİŞİM İSTE</button>
+        <p id="error-msg" class="error hidden">ERİŞİM REDDEDİLDİ: YETKİ YOK.</p>
+    </div>
+
+    <div id="dashboard" class="dashboard-container hidden">
+        
+        <header>
+            <div class="header-left">
+                <h2>GOD_MODE // ACTIVE</h2>
+                <small>CPU: 12% | RAM: 40% | SOULS: 8,492</small>
+            </div>
+            <button onclick="location.href='../index.html'" class="btn-exit">SİMÜLASYONA DÖN</button>
+        </header>
+
+        <div class="admin-grid">
+            
+            <div class="panel logs-panel">
+                <h3>CANLI YOLCU AKIŞI</h3>
+                <div id="log-stream" class="log-content">
+                    </div>
+            </div>
+
+            <div class="panel control-panel">
+                <h3>SİSTEM KONTROLÜ</h3>
+                
+                <div class="control-item">
+                    <span>GÖLGE MOTORU</span>
+                    <label class="switch">
+                        <input type="checkbox" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                
+                <div class="control-item">
+                    <span>KADER ALGORİTMASI</span>
+                    <label class="switch">
+                        <input type="checkbox" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="control-item">
+                    <span>PİŞMANLIK VİRÜSÜ</span>
+                    <label class="switch">
+                        <input type="checkbox"> <span class="slider red-slider"></span>
+                    </label>
+                </div>
+
+                <button class="btn-danger" onclick="alert('DİKKAT: BU İŞLEM GERİ ALINAMAZ.\nSimülasyon sıfırlanıyor...')">
+                    ⚠️ TÜM SİSTEMİ SIFIRLA (RESET WORLD)
+                </button>
+            </div>
+
+            <div class="panel stats-panel">
+                <h3>ARKETİP DAĞILIMI</h3>
+                <div class="bar-chart">
+                    <div class="bar-row">
+                        <span>YETİM</span>
+                        <div class="bar"><div style="width: 80%"></div></div>
+                    </div>
+                    <div class="bar-row">
+                        <span>SAVAŞÇI</span>
+                        <div class="bar"><div style="width: 40%"></div></div>
+                    </div>
+                    <div class="bar-row">
+                        <span>YARATICI</span>
+                        <div class="bar"><div style="width: 20%"></div></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="admin.js"></script>
+</body>
+</html>
