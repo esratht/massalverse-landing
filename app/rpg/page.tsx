@@ -1,8 +1,26 @@
 "use client";
 
-import { AvatarCreator } from '@readyplayerme/react-avatar-creator';
+import dynamic from 'next/dynamic';
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+
+// KRİTİK DÜZELTME: AvatarCreator'ı sunucuda değil, sadece tarayıcıda yüklüyoruz.
+const AvatarCreator = dynamic(
+  () => import('@readyplayerme/react-avatar-creator').then((mod) => mod.AvatarCreator),
+  { 
+    ssr: false, // Server Side Rendering KAPALI -> Beyaz ekranı çözen satır.
+    loading: () => (
+        <div className="w-full h-full flex flex-col items-center justify-center bg-black border-2 border-pink-500 shadow-[0_0_30px_rgba(236,72,153,0.3)]">
+            <div className="text-pink-500 font-bold text-xl tracking-[0.3em] animate-pulse mb-4">
+                MENNAN
+            </div>
+            <div className="text-cyan-400 text-xs font-mono">
+                [ SİSTEM BAĞLANIYOR... ]
+            </div>
+        </div>
+    )
+  }
+);
 
 type GameTurn = {
   role: 'user' | 'assistant';
@@ -14,13 +32,13 @@ export default function RpgPage() {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({ name: '', sign: '', regret: '' });
   const [avatarUrl, setAvatarUrl] = useState('');
-  
+   
   const [gameHistory, setGameHistory] = useState<GameTurn[]>([]);
   const [loading, setLoading] = useState(false);
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareContent, setShareContent] = useState('');
-  
+   
   const scrollRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const shareCardRef = useRef<HTMLDivElement>(null);
@@ -51,19 +69,16 @@ export default function RpgPage() {
     }
   };
 
-  // Hikayeden kısa özet çıkar
   const getStoryExcerpt = (text: string, maxLength: number = 100) => {
     if (text.length <= maxLength) return text;
     return text.substring(0, maxLength).trim() + "...";
   };
 
-  // Paylaşım modalını aç
   const openShareModal = (text: string) => {
     setShareContent(text);
     setShowShareModal(true);
   };
 
-  // Paylaşım fonksiyonu
   const handleShare = async () => {
     const excerpt = getStoryExcerpt(shareContent, 150);
     const shareText = `🔮 ${formData.name}'in Massalverse Hikayesi\n\n"${excerpt}"\n\n✨ Sen de kendi masalını yaz:\n#Massalverse #NoRegretMachine`;
@@ -87,7 +102,6 @@ export default function RpgPage() {
     }
   };
 
-  // Sosyal medya paylaşım linkleri
   const shareToTwitter = () => {
     const excerpt = getStoryExcerpt(shareContent, 100);
     const text = encodeURIComponent(`🔮 "${excerpt}"\n\n✨ Massalverse'de kendi masalını yaz!\n#Massalverse #NoRegretMachine`);
@@ -187,8 +201,8 @@ export default function RpgPage() {
   };
 
   return (
-    <div className="min-h-screen text-cyan-400 font-['Fira_Code'] flex flex-col items-center p-2 sm:p-4 cyber-grid relative overflow-hidden">
-      
+    <div className="min-h-screen text-cyan-400 font-['Fira_Code'] flex flex-col items-center p-2 sm:p-4 cyber-grid relative overflow-hidden bg-black">
+       
       {/* HEADER */}
       <div className="w-full max-w-4xl border-b border-cyan-800 pb-2 mb-4 flex justify-between items-center sticky top-0 bg-black/95 z-50 pt-2 backdrop-blur-md shadow-[0_10px_20px_rgba(0,0,0,0.8)]">
         <Link href="/" className="text-lg sm:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-600 truncate mr-2 tracking-widest drop-shadow-[0_0_5px_rgba(0,255,255,0.5)] hover:opacity-80 transition">
@@ -294,7 +308,7 @@ export default function RpgPage() {
         </div>
       )}
 
-      {/* ADIM 2: AVATAR YARATICI */}
+      {/* ADIM 2: AVATAR YARATICI (DÜZELTİLMİŞ) */}
       {step === 2 && (
         <div className="w-full h-[75vh] sm:h-[80vh] border-2 border-pink-500 relative shadow-[0_0_30px_rgba(236,72,153,0.3)] animate-in zoom-in duration-500">
           <div className="absolute top-0 left-0 bg-pink-500 text-black text-[10px] sm:text-xs px-2 py-1 z-10 font-bold uppercase tracking-widest">
@@ -346,7 +360,7 @@ export default function RpgPage() {
                    )}
                  </div>
 
-                 {/* SEÇENEKLER - Hikaye ile bağlantılı */}
+                 {/* SEÇENEKLER */}
                  {turn.role === 'assistant' && index === gameHistory.length - 1 && turn.options && turn.options.length > 0 && (
                    <div className="mt-6 w-full space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
                      <p className="text-[10px] text-cyan-600 tracking-widest text-center mb-2">▼ YOLUNU SEÇ ▼</p>
