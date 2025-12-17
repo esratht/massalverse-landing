@@ -1,22 +1,22 @@
-import type { Metadata } from 'next'
-import './globals.css'
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css";
+
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'Massalverse - Kendi Masalına Uyan!',
-  description: 'Massalverse Simülasyonu - Gölge Biyografi, Tarot, Astroloji ve daha fazlası',
-}
+  title: "Massalverse",
+  description: "No Regret Machine",
+};
 
 export default function RootLayout({
   children,
-}: {
-  children: React.ReactNode
-}) {
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
     <html lang="tr">
-      <head>
-        <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Orbitron:wght@500;900&display=swap" rel="stylesheet" />
-      </head>
-      <body>{children}</body>
+      <body className={inter.className}>{children}</body>
     </html>
-  )
+  );
 }
