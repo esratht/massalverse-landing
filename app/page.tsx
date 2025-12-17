@@ -1,474 +1,166 @@
 "use client";
 
-import dynamic from 'next/dynamic';
-import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import { useState } from 'react';
 
-// KRİTİK DÜZELTME: AvatarCreator'ı sunucuda değil, sadece tarayıcıda yüklüyoruz.
-const AvatarCreator = dynamic(
-  () => import('@readyplayerme/react-avatar-creator').then((mod) => mod.AvatarCreator),
-  { 
-    ssr: false, // Server Side Rendering KAPALI -> Beyaz ekranı çözen satır.
-    loading: () => (
-        <div className="w-full h-full flex flex-col items-center justify-center bg-black border-2 border-pink-500 shadow-[0_0_30px_rgba(236,72,153,0.3)]">
-            <div className="text-pink-500 font-bold text-xl tracking-[0.3em] animate-pulse mb-4">
-                MENNAN
-            </div>
-            <div className="text-cyan-400 text-xs font-mono">
-                [ SİSTEM BAĞLANIYOR... ]
-            </div>
-        </div>
-    )
-  }
-);
+export default function LandingPage() {
+  const [activeModal, setActiveModal] = useState<string | null>(null);
 
-type GameTurn = {
-  role: 'user' | 'assistant';
-  content: string; 
-  options?: string[]; 
-};
-
-export default function RpgPage() {
-  const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState({ name: '', sign: '', regret: '' });
-  const [avatarUrl, setAvatarUrl] = useState('');
-   
-  const [gameHistory, setGameHistory] = useState<GameTurn[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [playingIndex, setPlayingIndex] = useState<number | null>(null);
-  const [showShareModal, setShowShareModal] = useState(false);
-  const [shareContent, setShareContent] = useState('');
-   
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const shareCardRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [gameHistory.length, loading]);
-
-  const handleInput = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleOnAvatarExported = (event: any) => {
-    setAvatarUrl(event.data.url);
-    setStep(3);
-    startGame(); 
-  };
-
-  const resetGame = () => {
-    if (confirm("Simülasyonu sonlandırmak istediğine emin misin?")) {
-        setStep(1);
-        setGameHistory([]);
-        setAvatarUrl('');
-        setFormData({ name: '', sign: '', regret: '' });
-        if (audioRef.current) audioRef.current.pause();
-    }
-  };
-
-  const getStoryExcerpt = (text: string, maxLength: number = 100) => {
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength).trim() + "...";
-  };
-
-  const openShareModal = (text: string) => {
-    setShareContent(text);
-    setShowShareModal(true);
-  };
-
-  const handleShare = async () => {
-    const excerpt = getStoryExcerpt(shareContent, 150);
-    const shareText = `🔮 ${formData.name}'in Massalverse Hikayesi\n\n"${excerpt}"\n\n✨ Sen de kendi masalını yaz:\n#Massalverse #NoRegretMachine`;
-    
-    const shareData = {
-        title: 'Massalverse: No Regret Machine',
-        text: shareText,
-        url: window.location.origin
-    };
-
-    try {
-        if (navigator.share) {
-            await navigator.share(shareData);
-        } else {
-            await navigator.clipboard.writeText(`${shareText}\n${shareData.url}`);
-            alert("HİKAYE KOPYALANDI! 📋\n\nSosyal medyada paylaşmak için yapıştır.");
-        }
-        setShowShareModal(false);
-    } catch (err) {
-        console.log("Paylaşım iptal edildi.");
-    }
-  };
-
-  const shareToTwitter = () => {
-    const excerpt = getStoryExcerpt(shareContent, 100);
-    const text = encodeURIComponent(`🔮 "${excerpt}"\n\n✨ Massalverse'de kendi masalını yaz!\n#Massalverse #NoRegretMachine`);
-    const url = encodeURIComponent(window.location.origin);
-    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
-    setShowShareModal(false);
-  };
-
-  const shareToWhatsApp = () => {
-    const excerpt = getStoryExcerpt(shareContent, 150);
-    const text = encodeURIComponent(`🔮 *${formData.name}'in Massalverse Hikayesi*\n\n"${excerpt}"\n\n✨ Sen de kendi masalını yaz: ${window.location.origin}\n\n#Massalverse`);
-    window.open(`https://wa.me/?text=${text}`, '_blank');
-    setShowShareModal(false);
-  };
-
-  const playAudio = async (text: string, index: number) => {
-    if (playingIndex === index) {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        setPlayingIndex(null);
-      }
-      return;
-    }
-    try {
-      setPlayingIndex(index);
-      const response = await fetch('/api/read-story', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text }),
-      });
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      if (audioRef.current) audioRef.current.pause();
-      const audio = new Audio(url);
-      audioRef.current = audio;
-      audio.play();
-      audio.onended = () => setPlayingIndex(null);
-    } catch (err) {
-      alert("SES HATASI");
-      setPlayingIndex(null);
-    }
-  };
-
-  const startGame = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch('/api/generate-story', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          history: [], 
-          userName: formData.name, 
-          sign: formData.sign, 
-          regret: formData.regret 
-        }),
-      });
-      const data = await response.json();
-      setGameHistory([{ 
-        role: 'assistant', 
-        content: data.story, 
-        options: data.options 
-      }]);
-    } catch (err) { 
-      alert("BAĞLANTI KOPTU"); 
-    } finally { 
-      setLoading(false); 
-    }
-  };
-
-  const makeChoice = async (choice: string) => {
-    const newHistory = [...gameHistory, { role: 'user', content: choice } as GameTurn];
-    setGameHistory(newHistory);
-    setLoading(true);
-    try {
-      const apiHistory = newHistory.map(h => ({ role: h.role, content: h.content }));
-      const response = await fetch('/api/generate-story', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          history: apiHistory, 
-          userName: formData.name, 
-          sign: formData.sign, 
-          regret: formData.regret 
-        }),
-      });
-      const data = await response.json();
-      setGameHistory(prev => [...prev, { 
-        role: 'assistant', 
-        content: data.story, 
-        options: data.options 
-      }]);
-    } catch (err) { 
-      alert("SİMÜLASYON HATASI"); 
-    } finally { 
-      setLoading(false); 
-    }
-  };
+  const openModal = (id: string) => setActiveModal(id);
+  const closeModal = () => setActiveModal(null);
 
   return (
-    <div className="min-h-screen text-cyan-400 font-['Fira_Code'] flex flex-col items-center p-2 sm:p-4 cyber-grid relative overflow-hidden bg-black">
-       
-      {/* HEADER */}
-      <div className="w-full max-w-4xl border-b border-cyan-800 pb-2 mb-4 flex justify-between items-center sticky top-0 bg-black/95 z-50 pt-2 backdrop-blur-md shadow-[0_10px_20px_rgba(0,0,0,0.8)]">
-        <Link href="/" className="text-lg sm:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-600 truncate mr-2 tracking-widest drop-shadow-[0_0_5px_rgba(0,255,255,0.5)] hover:opacity-80 transition">
-          NO_REGRET_MACHINE
-        </Link>
-        
-        <div className="flex items-center gap-3">
-            {step === 3 && (
-                <button 
-                    onClick={resetGame}
-                    className="border border-red-500 text-red-500 hover:bg-red-500 hover:text-black px-3 py-1 text-[10px] sm:text-xs font-bold transition uppercase whitespace-nowrap active:scale-95 shadow-[0_0_10px_rgba(255,0,0,0.3)]"
-                >
-                    <span className="sm:hidden">[X]</span>
-                    <span className="hidden sm:inline">[ X ] SIFIRLA</span>
-                </button>
-            )}
+    <>
+      {/* Tarama Çizgisi Efekti */}
+      <div className="scan-line"></div>
+
+      <div className="container">
+        <header>
+          <h1 className="main-title">MASSALVERSE</h1>
+          <p className="subtitle">Kendi Masalına Uyan!</p>
+          <div className="divider">
+            <span className="dot"></span>
+          </div>
+        </header>
+
+        {/* TERMİNAL KUTUSU */}
+        <div className="terminal-box">
+          <div className="terminal-header">
+            <span className="circle red"></span>
+            <span className="circle yellow"></span>
+            <span className="circle green"></span>
+            <span className="terminal-title">&gt; SYSTEM_ROOT</span>
+          </div>
+          <div className="terminal-content">
+            <p>&gt; Sistem başlatılıyor...</p>
+            <p>&gt; Bağlantı: Ana Sunucu <span className="status-active">[ONLINE]</span></p>
+            <p>&gt; Gizlilik Protokolleri <span className="status-ready">[AKTİF]</span></p>
+            <br />
+            <p className="blink">&gt; Lütfen giriş protokolünü seçin_</p>
+          </div>
+        </div>
+
+        {/* --- CYBERPUNK "SİMÜLASYONA GİR" BUTONU --- */}
+        <div className="flex flex-col items-center justify-center my-12 relative z-10">
             
-            <div className="flex items-center gap-2">
-                {avatarUrl && (
-                  <div className="relative">
-                    <div className="absolute -inset-1 bg-gradient-to-r from-pink-600 to-purple-600 rounded-full blur opacity-75"></div>
-                    <img 
-                      src={avatarUrl.replace('.glb', '.png')} 
-                      className="relative w-10 h-10 rounded-full border-2 border-cyan-500 object-cover bg-gray-900" 
-                      alt="Avatar"
-                    />
-                  </div>
-                )}
-                <p className="text-[10px] text-pink-500 animate-pulse hidden sm:block font-bold ml-1">● ON-AIR</p>
+            {/* Üstteki Uyarı Yazısı */}
+            <p className="text-[10px] text-pink-500 font-mono mb-2 animate-pulse tracking-[0.3em]">
+              ⚠️ WARNING: REALITY GLITCH DETECTED
+            </p>
+
+            <Link href="/rpg" className="relative group">
+                {/* Arkadaki Neon Işık */}
+                <div className="absolute -inset-1 bg-gradient-to-r from-cyan-400 via-purple-600 to-pink-600 rounded-lg blur opacity-25 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
+                
+                {/* Ana Buton */}
+                <button className="relative px-8 py-6 sm:px-12 bg-black rounded-lg leading-none flex items-center divide-x divide-gray-600 border border-gray-800 group-hover:border-cyan-500 transition-colors">
+                    
+                    <span className="flex items-center space-x-5">
+                        <span className="pr-6 text-gray-100 group-hover:text-cyan-400 transition duration-200">
+                             <span className="text-2xl">💠</span>
+                        </span>
+                    </span>
+
+                    <span className="pl-6 text-cyan-100 group-hover:text-white transition duration-200 font-mono text-lg sm:text-xl font-bold tracking-widest uppercase">
+                         [ SİMÜLASYONA GİR ]
+                    </span>
+                    
+                    {/* Hover Scanlines */}
+                    <div className="absolute inset-0 bg-[linear-gradient(rgba(18,255,247,0.1)_1px,transparent_1px)] bg-[size:4px_4px] opacity-0 group-hover:opacity-100 pointer-events-none rounded-lg"></div>
+                </button>
+            </Link>
+
+            {/* Alttaki Sistem Bilgisi */}
+            <div className="mt-4 flex gap-4 text-[10px] text-gray-600 font-mono">
+                <span>CPU: %98</span>
+                <span>MEM: OVERLOAD</span>
+                <span className="text-green-500">● SERVER: READY</span>
             </div>
+        </div>
+
+        {/* MODÜLLER GRID */}
+        <div className="modules-grid">
+          
+          <Link href="/manifesto" className="module-card main-module">
+            <div className="icon">💠</div>
+            <div className="title">MANİFESTO</div>
+            <div className="desc">SİMÜLASYON ÇEKİRDEĞİ</div>
+          </Link>
+
+          <Link href="/shadow" className="module-card">
+            <div className="icon">👁️</div>
+            <div className="title">GÖLGE BİO</div>
+            <div className="desc">YÜZLEŞME PROTOKOLÜ</div>
+          </Link>
+
+          <Link href="/tarot" className="module-card">
+            <div className="icon">🃏</div>
+            <div className="title">GLITCH TAROT</div>
+            <div className="desc">SİSTEM HATALARI</div>
+          </Link>
+
+          <Link href="/zodiac" className="module-card">
+            <div className="icon">♈</div>
+            <div className="title">ZODIAC LOG</div>
+            <div className="desc">GÖLGE YANSIMASI</div>
+          </Link>
+          
+          <Link href="/mars" className="module-card" style={{borderColor: '#ff4500'}}>
+            <div className="icon">🔥</div>
+            <div className="title">MARS VURUCU</div>
+            <div className="desc">7 GÜN EYLEM SÖZLEŞMESİ</div>
+          </Link>
+
+        </div>
+
+        <div style={{marginTop: '30px'}}>
+          <Link href="/admin" className="text-[#333] no-underline text-[0.7rem] font-['Orbitron'] transition-colors hover:text-[#ff003c]">
+            🔒 GOD MODE
+          </Link>
+        </div>
+
+        <div className="legal-footer">
+          <span className="legal-link" onClick={() => openModal('modal-disclaimer')}>⚠️ YASAL UYARI & EĞLENCE BİLDİRİMİ</span>
+          <span className="legal-link" onClick={() => openModal('modal-kvkk')}>🛡️ KVKK VE AÇIK RIZA</span>
+        </div>
+
+        <div className="footer-status" style={{marginTop: '10px'}}>SYSTEM STATUS: ONLINE // v3.2</div>
+      </div>
+
+      {/* MODAL - YASAL UYARI */}
+      <div 
+        className={`legal-overlay ${activeModal === 'modal-disclaimer' ? 'active' : ''}`} 
+        onClick={(e) => e.target === e.currentTarget && closeModal()}
+      >
+        <div className="legal-box">
+          <span className="close-modal" onClick={closeModal}>×</span>
+          <h2>⚠️ SİMÜLASYON UYARISI</h2>
+          <p><strong>DİKKAT YOLCU:</strong></p>
+          <p>1. Massalverse platformunda sunulan içerikler (Gölge Biyografi, Tarot, Astrolojik Analizler ve Ma Simülasyonu) tamamen <strong>EĞLENCE ve KURGU</strong> amaçlıdır.</p>
+          <p>2. Burada sunulan "Berat"lar, analizler veya tavsiyeler; tıbbi, psikolojik, hukuki veya finansal yatırım tavsiyesi <strong>DEĞİLDİR</strong>.</p>
+          <p>3. "Pişmanlık Virüsü", "Altın Onarım" gibi terimler sanatsal metafordur. Gerçek bir tıbbi durumu yansıtmaz.</p>
+          <p>4. Psikolojik rahatsızlık hissettiğiniz durumlarda lütfen profesyonel bir uzmana başvurunuz.</p>
         </div>
       </div>
 
-      {/* ADIM 1: GİRİŞ FORMU */}
-      {step === 1 && (
-        <div className="w-full max-w-lg border border-cyan-500/50 bg-black/80 p-6 sm:p-8 mt-10 shadow-[0_0_30px_rgba(6,182,212,0.2)] animate-in fade-in zoom-in duration-500 relative">
-          <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-cyan-500"></div>
-          <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-pink-500"></div>
-
-          <h2 className="text-lg sm:text-xl mb-6 text-pink-500 font-bold border-l-4 border-pink-500 pl-3 uppercase tracking-widest">
-            KİMLİK PROTOKOLÜ
-          </h2>
-          
-          <div className="space-y-5">
-            <div>
-               <label className="text-[10px] text-cyan-600 mb-1 block uppercase tracking-widest">Kod Adın</label>
-               <input 
-                 name="name" 
-                 value={formData.name} 
-                 onChange={handleInput} 
-                 className="w-full bg-gray-900/50 border border-gray-700 text-cyan-300 p-3 outline-none focus:border-cyan-400 focus:shadow-[0_0_10px_rgba(6,182,212,0.3)] transition-all" 
-                 placeholder="Giriş yap..." 
-               />
-            </div>
-            
-            <div>
-               <label className="text-[10px] text-cyan-600 mb-1 block uppercase tracking-widest">Yıldız Konumu</label>
-               <select 
-                 name="sign" 
-                 value={formData.sign} 
-                 onChange={handleInput} 
-                 className="w-full bg-gray-900/50 border border-gray-700 text-cyan-300 p-3 outline-none focus:border-cyan-400"
-               >
-                <option value="">SEÇİNİZ...</option>
-                <option value="Koç">KOÇ</option>
-                <option value="Boğa">BOĞA</option>
-                <option value="İkizler">İKİZLER</option>
-                <option value="Yengeç">YENGEÇ</option>
-                <option value="Aslan">ASLAN</option>
-                <option value="Başak">BAŞAK</option>
-                <option value="Terazi">TERAZİ</option>
-                <option value="Akrep">AKREP</option>
-                <option value="Yay">YAY</option>
-                <option value="Oğlak">OĞLAK</option>
-                <option value="Kova">KOVA</option>
-                <option value="Balık">BALIK</option>
-              </select>
-            </div>
-
-            <div>
-               <label className="text-[10px] text-cyan-600 mb-1 block uppercase tracking-widest">Sistem Arızası (Keşke)</label>
-               <textarea 
-                 name="regret" 
-                 value={formData.regret} 
-                 onChange={handleInput} 
-                 rows={3} 
-                 className="w-full bg-gray-900/50 border border-gray-700 text-pink-300 p-3 outline-none focus:border-pink-500 focus:shadow-[0_0_10px_rgba(236,72,153,0.3)] resize-none" 
-                 placeholder="Veri giriniz..." 
-               />
-            </div>
-
-            <button 
-              onClick={() => {
-                if(formData.name && formData.sign && formData.regret) setStep(2);
-                else alert("EKSİK VERİ GİRİŞİ!");
-              }}
-              className="w-full mt-4 bg-cyan-900/20 border border-cyan-500 text-cyan-400 py-4 hover:bg-cyan-500 hover:text-black transition uppercase font-bold tracking-[0.2em] relative overflow-hidden group"
-            >
-              <span className="relative z-10">[ BAĞLANTIYI BAŞLAT ]</span>
-              <div className="absolute inset-0 bg-cyan-400 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300 z-0"></div>
-            </button>
-          </div>
+      {/* MODAL - KVKK */}
+      <div 
+        className={`legal-overlay ${activeModal === 'modal-kvkk' ? 'active' : ''}`} 
+        onClick={(e) => e.target === e.currentTarget && closeModal()}
+      >
+        <div className="legal-box">
+          <span className="close-modal" onClick={closeModal}>×</span>
+          <h2>🛡️ KVKK & AÇIK RIZA METNİ</h2>
+          <p><strong>VERİ GİZLİLİĞİ VE İŞLEME POLİTİKASI:</strong></p>
+          <p>Massalverse Simülasyonu'na giriş yaparak aşağıdaki şartları kabul etmiş sayılırsınız:</p>
+          <ul>
+            <li><strong>1. Veri İşleme:</strong> Simülasyon dahilinde paylaştığınız veriler, sadece anlık olarak işlenir.</li>
+            <li><strong>2. Veri Saklama:</strong> Sayfa yenilendiğinde veya simülasyon sonlandığında <strong>TÜM VERİLER SİLİNİR</strong>.</li>
+            <li><strong>3. Üçüncü Taraflar:</strong> Verileriniz pazarlama amacıyla üçüncü şahıslara satılmaz.</li>
+            <li><strong>4. Açık Rıza:</strong> "Simülasyona Gir" butonuna tıklayarak, bu verilerin işlenmesine <strong>AÇIK RIZA</strong> verdiğinizi beyan edersiniz.</li>
+          </ul>
         </div>
-      )}
-
-      {/* ADIM 2: AVATAR YARATICI (DÜZELTİLMİŞ) */}
-      {step === 2 && (
-        <div className="w-full h-[75vh] sm:h-[80vh] border-2 border-pink-500 relative shadow-[0_0_30px_rgba(236,72,153,0.3)] animate-in zoom-in duration-500">
-          <div className="absolute top-0 left-0 bg-pink-500 text-black text-[10px] sm:text-xs px-2 py-1 z-10 font-bold uppercase tracking-widest">
-            AVATAR_BUILDER.EXE
-          </div>
-          <AvatarCreator 
-            subdomain="demo" 
-            config={{ clearCache: true, bodyType: 'fullbody', language: 'tr' }} 
-            style={{ width: '100%', height: '100%', border: 'none', background: '#000' }} 
-            onAvatarExported={handleOnAvatarExported} 
-          />
-        </div>
-      )}
-
-      {/* ADIM 3: OYUN EKRANI */}
-      {step === 3 && (
-        <div className="flex flex-col w-full max-w-3xl h-[80vh] border border-gray-800 bg-black/90 shadow-2xl relative animate-in slide-in-from-bottom-5 duration-500">
-          <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-8 scrollbar-hide pb-32">
-             {gameHistory.map((turn, index) => (
-               <div key={index} className={`flex flex-col ${turn.role === 'user' ? 'items-end' : 'items-start'} animate-in fade-in slide-in-from-bottom-2`}>
-                 
-                 <div className={`max-w-[95%] sm:max-w-[85%] p-5 border relative text-sm sm:text-base leading-relaxed ${
-                   turn.role === 'user' 
-                   ? 'border-gray-600 bg-gray-900 text-gray-300 text-right rounded-tl-xl rounded-bl-xl rounded-br-xl' 
-                   : 'border-cyan-500/50 bg-cyan-900/10 text-cyan-100 rounded-tr-xl rounded-bl-xl rounded-br-xl shadow-[0_0_15px_rgba(6,182,212,0.15)]'
-                 }`}>
-                   {turn.role === 'assistant' && (
-                     <div className="absolute -top-3 -left-3 bg-black border border-cyan-500 text-cyan-500 text-[10px] px-1 font-bold">SYS</div>
-                   )}
-
-                   <p className="whitespace-pre-wrap">{turn.content}</p>
-                   
-                   {turn.role === 'assistant' && (
-                     <div className="flex gap-2 mt-4">
-                        <button 
-                            onClick={() => playAudio(turn.content, index)} 
-                            className="text-[10px] flex items-center gap-2 text-pink-500 border border-pink-900/50 px-3 py-1 bg-black/50 hover:bg-pink-900/50 hover:border-pink-500 transition uppercase tracking-widest"
-                        >
-                            {playingIndex === index ? <span className="animate-pulse">⏹ STOP</span> : <span>🔊 DİNLE</span>}
-                        </button>
-                        
-                        <button 
-                            onClick={() => openShareModal(turn.content)} 
-                            className="text-[10px] flex items-center gap-2 text-green-500 border border-green-900/50 px-3 py-1 bg-black/50 hover:bg-green-900/50 hover:border-green-500 transition uppercase tracking-widest"
-                        >
-                            📤 PAYLAŞ
-                        </button>
-                     </div>
-                   )}
-                 </div>
-
-                 {/* SEÇENEKLER */}
-                 {turn.role === 'assistant' && index === gameHistory.length - 1 && turn.options && turn.options.length > 0 && (
-                   <div className="mt-6 w-full space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                     <p className="text-[10px] text-cyan-600 tracking-widest text-center mb-2">▼ YOLUNU SEÇ ▼</p>
-                     {turn.options.map((option, i) => (
-                       <button
-                         key={i}
-                         onClick={() => {
-                           if (option.includes("Yeni simülasyon") || option.includes("yeniden başlat")) {
-                             resetGame();
-                           } else if (option.includes("paylaş")) {
-                             openShareModal(gameHistory.map(h => h.content).join('\n\n'));
-                           } else if (option.includes("Ana sayfa") || option.includes("Çıkış")) {
-                             window.location.href = '/';
-                           } else if (!loading) {
-                             makeChoice(option);
-                           }
-                         }}
-                         disabled={loading}
-                         className="w-full border border-pink-500/70 text-pink-400 py-4 px-6 hover:bg-pink-500 hover:text-black transition-all text-sm font-bold disabled:opacity-50 text-left relative group active:scale-[0.98] shadow-[0_0_10px_rgba(236,72,153,0.1)] hover:shadow-[0_0_20px_rgba(236,72,153,0.3)]"
-                       >
-                         <span className="absolute left-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition text-lg">►</span>
-                         <span className="ml-6">{option}</span>
-                       </button>
-                     ))}
-                   </div>
-                 )}
-               </div>
-             ))}
-
-             {loading && (
-                <div className="flex items-center gap-2 text-pink-500 text-xs p-2 animate-pulse font-bold tracking-widest">
-                    <span className="w-2 h-2 bg-pink-500"></span>
-                    <span>SİMÜLASYON HESAPLANIYOR...</span>
-                </div>
-             )}
-          </div>
-        </div>
-      )}
-
-      {/* PAYLAŞIM MODALI */}
-      {showShareModal && (
-        <div 
-          className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4 backdrop-blur-sm"
-          onClick={() => setShowShareModal(false)}
-        >
-          <div 
-            className="w-full max-w-md bg-gray-950 border-2 border-cyan-500 p-6 animate-in zoom-in duration-300"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Paylaşım Kartı Önizleme */}
-            <div ref={shareCardRef} className="bg-gradient-to-br from-gray-900 to-black border border-cyan-800 p-4 mb-6">
-              <div className="flex items-center gap-3 mb-4">
-                {avatarUrl && (
-                  <img 
-                    src={avatarUrl.replace('.glb', '.png')} 
-                    className="w-12 h-12 rounded-full border-2 border-cyan-500 object-cover" 
-                    alt="Avatar"
-                  />
-                )}
-                <div>
-                  <p className="text-cyan-400 font-bold">{formData.name}</p>
-                  <p className="text-cyan-700 text-xs">{formData.sign} • Massalverse</p>
-                </div>
-              </div>
-              
-              <p className="text-gray-300 text-sm italic leading-relaxed mb-4">
-                "{getStoryExcerpt(shareContent, 120)}"
-              </p>
-              
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] text-cyan-600 tracking-widest">#Massalverse</span>
-                <span className="text-[10px] text-pink-500">🔮 No Regret Machine</span>
-              </div>
-            </div>
-
-            {/* Paylaşım Butonları */}
-            <div className="space-y-3">
-              <button 
-                onClick={shareToTwitter}
-                className="w-full bg-[#1DA1F2] text-white py-3 font-bold hover:bg-[#1a8cd8] transition flex items-center justify-center gap-2"
-              >
-                <span>𝕏</span> Twitter'da Paylaş
-              </button>
-              
-              <button 
-                onClick={shareToWhatsApp}
-                className="w-full bg-[#25D366] text-white py-3 font-bold hover:bg-[#20bd5a] transition flex items-center justify-center gap-2"
-              >
-                <span>📱</span> WhatsApp'ta Paylaş
-              </button>
-              
-              <button 
-                onClick={handleShare}
-                className="w-full border border-cyan-500 text-cyan-400 py-3 font-bold hover:bg-cyan-500 hover:text-black transition flex items-center justify-center gap-2"
-              >
-                <span>📋</span> Kopyala / Diğer
-              </button>
-            </div>
-
-            <button 
-              onClick={() => setShowShareModal(false)}
-              className="w-full mt-4 text-gray-500 text-sm hover:text-gray-300 transition"
-            >
-              Kapat
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
+      </div>
+    </>
   );
 }
