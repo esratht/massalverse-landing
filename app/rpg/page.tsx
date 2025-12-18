@@ -3,9 +3,6 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 
-// NOT: Artık harici paket import etmiyoruz.
-// Sadece saf HTML ve Javascript gücü kullanıyoruz.
-
 type GameTurn = {
   role: 'user' | 'assistant';
   content: string; 
@@ -13,56 +10,31 @@ type GameTurn = {
 };
 
 export default function RpgPage() {
-  // STATE
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({ name: '', sign: '', regret: '' });
   const [avatarUrl, setAvatarUrl] = useState('');
-   
   const [gameHistory, setGameHistory] = useState<GameTurn[]>([]);
   const [loading, setLoading] = useState(false);
-  const [playingIndex, setPlayingIndex] = useState<number | null>(null);
-  
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [synth, setSynth] = useState<SpeechSynthesis | null>(null);
 
-  // Tarayıcı yüklendiğinde ses motorunu tanı
-  useEffect(() => {
-    if (typeof window !== 'undefined') setSynth(window.speechSynthesis);
-  }, []);
-
-  // --- KRİTİK BÖLÜM: IFRAME DİNLEYİCİSİ ---
-  // Bu kod, iframe içindeki Ready Player Me sitesinden gelen mesajı havada kapar.
+  // IFRAME AVATAR DİNLEYİCİSİ (BEYAZ EKRAN ÇÖZÜMÜ)
   useEffect(() => {
     const receiveMessage = (event: any) => {
-        // Güvenlik: Sadece Ready Player Me'den gelen veriye bak
-        const source = event.data?.source;
-        // Bazen veri string gelir, bazen obje. Garantiye alalım:
         let data = event.data;
         try { if (typeof data === 'string') data = JSON.parse(data); } catch (e) {}
-
+        
         if (data?.source === 'readyplayerme' && data.eventName === 'v1.avatar.exported') {
-            // URL'yi yakala
-            const url = data.data.url;
-            console.log("Avatar Yakalandı:", url);
-            
-            // State'e işle ve oyunu başlat
-            setAvatarUrl(url);
+            console.log("Avatar Geldi:", data.data.url);
+            setAvatarUrl(data.data.url);
             setStep(3);
-            startSimulation(url);
+            startApiGame(data.data.url); // API'yi Tetikle
         }
     };
-
-    if (step === 2) {
-        window.addEventListener('message', receiveMessage);
-    }
-
-    return () => {
-        window.removeEventListener('message', receiveMessage);
-    };
+    if (step === 2) window.addEventListener('message', receiveMessage);
+    return () => window.removeEventListener('message', receiveMessage);
   }, [step]);
-  // ----------------------------------------
 
-  // Auto-Scroll
+  // SCROLL AYARI
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [gameHistory.length, loading]);
@@ -71,82 +43,75 @@ export default function RpgPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // --- SİMÜLASYON MOTORU (MOCK AI) ---
-  const startSimulation = (url: string) => {
+  // --- API BAĞLANTISI (GERÇEK CLAUDE) ---
+  const startApiGame = async (url: string) => {
     setLoading(true);
-    setTimeout(() => {
+    try {
+        const res = await fetch('/api/generate-story', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                history: [], // İlk mesaj boş
+                userName: formData.name,
+                sign: formData.sign,
+                regret: formData.regret
+            })
+        });
+        
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+
         setGameHistory([{ 
             role: 'assistant', 
-            content: `Sisteme giriş yapıldı: ${formData.name}.\n\nBurç Analizi: ${formData.sign}. Tipik bir ${formData.sign} refleksiyle "${formData.regret}" diyerek bir sistem döngüsüne (loop) girmişsin. Haritanı taradım; bu bir hata değil, bir tercih.\n\nAvatarın (Gölgen) yüklendi. Şimdi bu döngüyü nasıl kıracağız?`, 
-            options: ["Eskiye Dön (Savaş)", "Her Şeyi Yak (Formatla)"]
+            content: data.story, 
+            options: data.options 
         }]);
+
+    } catch (err) {
+        alert("GÖLGE BAĞLANTISI KURULAMADI (API KEY EKSİK OLABİLİR)");
+        console.error(err);
+    } finally {
         setLoading(false);
-    }, 2000);
+    }
   };
 
   const makeChoice = async (choice: string) => {
+    // Önce kullanıcının seçimini ekrana bas
     const newHistory = [...gameHistory, { role: 'user', content: choice } as GameTurn];
     setGameHistory(newHistory);
     setLoading(true);
 
-    setTimeout(() => {
-        let reply = "";
-        let nextOptions: string[] = [];
-
-        if (choice.includes("Savaş") || choice.includes("Eski")) {
-            reply = `Savaşmak... ${formData.sign} burcunun gizli gücü. Ama Massalverse'de kılıçla değil, veriyle savaşılır. Pişmanlığını yakıt olarak kullanacağız.\n\nSistemin hangi katmanına saldırıyoruz?`;
-            nextOptions = ["Sistemi Hackle (Derinleş)", "Yüzeye Çık (Uyumlan)"];
-        } 
-        else if (choice.includes("Yak") || choice.includes("Format")) {
-            reply = `Format atıldı. Eski kimliğin silindi. Artık otonom bir gölgesin.\n\nMassalverse'in arka kapısını buldun. Buradan nereye gidiyoruz?`;
-            nextOptions = ["Yasaklı Veritabanı (Gerçek)", "Sınırsız Kaos (Oyun)"];
-        }
-        else {
-            reply = `İlginç seçim: "${choice}". Sistem buna adapte oluyor. Yolculuk derinleşiyor. Geri dönüş yok.`;
-            nextOptions = ["Derine İn", "Bitir"];
-        }
-
-        setGameHistory(prev => [...prev, { role: 'assistant', content: reply, options: nextOptions }]);
-        setLoading(false);
-    }, 1500);
-  };
-
-  // Paylaşım
-  const handleShare = async (text: string) => {
-    const shareData = {
-        title: 'Massalverse: No Regret Machine',
-        text: `"${text}" \n\n>> Massalverse'de Gölgemle Konuşuyorum:`,
-        url: window.location.origin
-    };
     try {
-        if (navigator.share) await navigator.share(shareData);
-        else {
-            await navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`);
-            alert("Hikaye kopyalandı!");
-        }
-    } catch (err) {}
-  };
+        // Sonra tüm geçmişi alıp API'ye gönder
+        const res = await fetch('/api/generate-story', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                history: newHistory, // Tüm konuşma geçmişini gönderiyoruz
+                userName: formData.name,
+                sign: formData.sign,
+                regret: formData.regret
+            })
+        });
 
-  // Ses
-  const playAudio = (text: string, index: number) => {
-    if (!synth) return;
-    if (playingIndex === index) {
-        synth.cancel();
-        setPlayingIndex(null);
-        return;
+        const data = await res.json();
+        
+        setGameHistory(prev => [...prev, { 
+            role: 'assistant', 
+            content: data.story, 
+            options: data.options 
+        }]);
+
+    } catch (err) {
+        console.error(err);
+    } finally {
+        setLoading(false);
     }
-    synth.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'tr-TR';
-    utterance.rate = 0.9;
-    utterance.onend = () => setPlayingIndex(null);
-    setPlayingIndex(index);
-    synth.speak(utterance);
   };
 
+  // BASİT RESET
   const resetGame = () => {
-    if (confirm("Simülasyonu bitirmek istiyor musun?")) {
-        if(synth) synth.cancel();
+    if (confirm("Gerçeklikten kopuyor musun?")) {
         setStep(1); setGameHistory([]); setAvatarUrl(''); setFormData({ name: '', sign: '', regret: '' });
     }
   };
@@ -160,19 +125,8 @@ export default function RpgPage() {
           NO_REGRET_MACHINE
         </Link>
         <div className="flex items-center gap-3">
-            {/* AVATAR KÜÇÜK RESİM (Kırılmayı önleyen yapı) */}
-            {avatarUrl ? (
-                <img 
-                  src={avatarUrl.replace('.glb', '.png')} 
-                  className="w-10 h-10 rounded-full border-2 border-pink-500 object-cover bg-gray-900" 
-                  alt="Avatar"
-                />
-            ) : (
-                <div className="w-10 h-10 rounded-full border border-cyan-800 bg-gray-900 flex items-center justify-center text-xs opacity-50">?</div>
-            )}
-            {step === 3 && (
-                <button onClick={resetGame} className="text-red-500 border border-red-500 px-3 py-1 text-xs font-bold hover:bg-red-500 hover:text-black transition">[ X ]</button>
-            )}
+            {avatarUrl && <img src={avatarUrl.replace('.glb', '.png')} className="w-10 h-10 rounded-full border border-pink-500" />}
+            {step === 3 && <button onClick={resetGame} className="text-red-500 border border-red-500 px-2 py-1 text-xs">[ X ]</button>}
         </div>
       </div>
 
@@ -184,8 +138,8 @@ export default function RpgPage() {
           <div className="w-full max-w-md border border-cyan-500/50 bg-black/80 p-6 shadow-[0_0_50px_rgba(6,182,212,0.2)] animate-in zoom-in relative z-10">
             <h2 className="text-xl text-pink-500 font-bold mb-6 tracking-[0.2em] border-l-4 border-pink-500 pl-4">KİMLİK_PROTOKOLÜ</h2>
             <div className="space-y-4">
-               <input name="name" value={formData.name} onChange={handleInput} placeholder="Kod Adın" className="w-full bg-gray-900/50 text-cyan-400 p-3 border border-gray-700 outline-none focus:border-cyan-500"/>
-               <select name="sign" value={formData.sign} onChange={handleInput} className="w-full bg-gray-900/50 text-cyan-400 p-3 border border-gray-700 outline-none focus:border-cyan-500">
+               <input name="name" onChange={handleInput} placeholder="Kod Adın" className="w-full bg-gray-900/50 text-cyan-400 p-3 border border-gray-700 outline-none focus:border-cyan-500"/>
+               <select name="sign" onChange={handleInput} className="w-full bg-gray-900/50 text-cyan-400 p-3 border border-gray-700 outline-none focus:border-cyan-500">
                     <option value="">BURÇ SEÇİNİZ...</option>
                     <option value="Koç">KOÇ</option>
                     <option value="Boğa">BOĞA</option>
@@ -199,65 +153,47 @@ export default function RpgPage() {
                     <option value="Oğlak">OĞLAK</option>
                     <option value="Kova">KOVA</option>
                     <option value="Balık">BALIK</option>
-                 </select>
-               <textarea name="regret" value={formData.regret} onChange={handleInput} rows={3} placeholder="Sistem Hatası (Keşke)..." className="w-full bg-gray-900/50 text-pink-400 p-3 border border-gray-700 outline-none focus:border-pink-500 resize-none"/>
-               <button onClick={() => { if(formData.name && formData.sign && formData.regret) setStep(2); else alert("EKSİK VERİ!"); }} className="w-full mt-2 bg-cyan-900/20 border border-cyan-500 text-cyan-400 py-4 font-bold tracking-widest hover:bg-cyan-500 hover:text-black transition">AVATAR OLUŞTUR ►</button>
+               </select>
+               <textarea name="regret" onChange={handleInput} rows={3} placeholder="Sistem Hatası (Keşke)..." className="w-full bg-gray-900/50 text-pink-400 p-3 border border-gray-700 outline-none focus:border-pink-500 resize-none"/>
+               <button onClick={() => { if(formData.name && formData.sign && formData.regret) setStep(2); else alert("EKSİK VERİ!"); }} className="w-full mt-2 bg-cyan-900/20 border border-cyan-500 text-cyan-400 py-4 font-bold tracking-widest hover:bg-cyan-500 hover:text-black transition">MA'YI ÇAĞIR ►</button>
             </div>
           </div>
         )}
 
-        {/* STEP 2: SAF IFRAME (BEYAZ EKRAN SAVAR) */}
+        {/* STEP 2: IFRAME AVATAR (GÜVENLİ) */}
         {step === 2 && (
-          <div className="w-full h-full max-w-7xl border-2 border-pink-500 relative shadow-[0_0_30px_rgba(236,72,153,0.3)] bg-black flex flex-col animate-in zoom-in">
+          <div className="w-full h-full max-w-7xl border-2 border-pink-500 relative bg-black flex flex-col animate-in zoom-in">
              <div className="bg-pink-500 text-black px-3 py-2 font-bold flex justify-between items-center shrink-0">
                 <span className="text-xs">AVATAR_BUILDER.IFRAME</span>
-                {/* EĞER OTOMATİK GEÇMEZSE DİYE MANUEL BUTON */}
-                <button 
-                    onClick={() => { setAvatarUrl("https://models.readyplayer.me/64b73e89694d5d4d3c631742.glb"); setStep(3); startSimulation("https://models.readyplayer.me/64b73e89694d5d4d3c631742.glb"); }} 
-                    className="bg-black text-pink-500 px-2 py-1 text-[10px] border border-black hover:bg-white hover:text-pink-600 transition animate-pulse"
-                >
-                    GEÇ (MANUEL) ►
-                </button>
+                <button onClick={() => { setAvatarUrl("https://models.readyplayer.me/64b73e89694d5d4d3c631742.glb"); setStep(3); startApiGame("mock"); }} className="bg-black text-pink-500 px-2 py-1 text-[10px] animate-pulse">GEÇ (MANUEL) ►</button>
              </div>
-             
-             {/* KÜTÜPHANE YOK. SAF HTML IFRAME VAR. */}
-             <iframe 
-                src="https://demo.readyplayer.me/avatar?frameApi" 
-                className="w-full flex-1 border-0" 
-                allow="camera *; microphone *"
-                title="Ready Player Me"
-             />
+             <iframe src="https://demo.readyplayer.me/avatar?frameApi" className="w-full flex-1 border-0" allow="camera *; microphone *" title="Ready Player Me" />
           </div>
         )}
 
-        {/* STEP 3: CHAT */}
+        {/* STEP 3: API SOHBETİ */}
         {step === 3 && (
           <div className="w-full max-w-4xl h-full border border-gray-800 bg-black/90 flex flex-col relative shadow-2xl animate-in slide-in-from-bottom-10">
-             <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 pb-32 custom-scrollbar">
+             <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-6 pb-32 custom-scrollbar">
                 {gameHistory.map((turn, i) => (
                     <div key={i} className={`flex flex-col ${turn.role === 'user' ? 'items-end' : 'items-start'} animate-in fade-in`}>
-                        <div className={`max-w-[85%] p-4 sm:p-5 border relative text-sm sm:text-base leading-relaxed ${
+                        <div className={`max-w-[85%] p-5 border relative text-sm leading-relaxed ${
                             turn.role === 'user' ? 'border-gray-600 bg-gray-900 text-gray-300 rounded-l-xl rounded-br-xl text-right' : 'border-cyan-500/50 bg-cyan-950/30 text-cyan-100 rounded-r-xl rounded-bl-xl shadow-[0_0_15px_rgba(6,182,212,0.1)]'
                         }`}>
-                            {turn.role === 'assistant' && <span className="absolute -top-2 -left-2 text-[10px] bg-black border border-cyan-500 text-cyan-500 px-1">GÖLGE</span>}
+                            {turn.role === 'assistant' && <span className="absolute -top-2 -left-2 text-[10px] bg-black border border-cyan-500 text-cyan-500 px-1 font-bold">MA (GÖLGE)</span>}
                             {turn.content}
-                            {turn.role === 'assistant' && (
-                                <div className="mt-3 flex gap-2 border-t border-cyan-900/30 pt-2">
-                                    <button onClick={() => playAudio(turn.content, i)} className={`text-[10px] flex items-center gap-1 transition uppercase border px-2 py-1 ${playingIndex === i ? 'text-red-500 border-red-500' : 'text-pink-500 border-pink-900/50'}`}>{playingIndex === i ? '■ DUR' : '▶ DİNLE'}</button>
-                                    <button onClick={() => handleShare(turn.content)} className="text-[10px] flex items-center gap-1 text-green-500 border border-green-900/50 px-2 py-1">🔗 PAYLAŞ</button>
-                                </div>
-                            )}
                         </div>
                     </div>
                 ))}
-                {loading && <div className="flex items-center gap-2 text-pink-500 text-xs animate-pulse p-4"><span>GÖLGEN YAZIYOR...</span></div>}
+                {loading && <div className="text-pink-500 text-xs p-4 animate-pulse">MA SENİ ANALİZ EDİYOR...</div>}
              </div>
 
+             {/* SEÇENEKLER (STATİK, CLAUDE İÇERİKTEN YÖNETİRSE DAHA İYİ OLUR) */}
              {gameHistory.length > 0 && gameHistory[gameHistory.length - 1].role === 'assistant' && !loading && (
-                 <div className="absolute bottom-0 left-0 w-full bg-black/95 border-t border-cyan-900 p-4 backdrop-blur-sm">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                 <div className="absolute bottom-0 left-0 w-full bg-black/95 border-t border-cyan-900 p-4">
+                    <div className="grid grid-cols-2 gap-3">
                         {gameHistory[gameHistory.length - 1].options?.map((opt, idx) => (
-                            <button key={idx} onClick={() => { if(opt.includes("Bitir")) resetGame(); else makeChoice(opt); }} className="border border-pink-500/50 text-pink-400 py-3 px-4 hover:bg-pink-500 hover:text-black transition font-bold text-sm text-left relative group">
+                            <button key={idx} onClick={() => makeChoice(opt)} className="border border-pink-500/50 text-pink-400 py-3 px-4 hover:bg-pink-500 hover:text-black transition font-bold text-sm text-left truncate relative group">
                                 <span className="absolute left-2 opacity-0 group-hover:opacity-100 transition">►</span><span className="group-hover:translate-x-4 transition-transform block">{opt}</span>
                             </button>
                         ))}
