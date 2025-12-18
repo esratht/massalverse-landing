@@ -1,8 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { NextResponse } from 'next/server';
 
-// BU SATIR HAYAT KURTARIR: Vercel'e "Node.js kullan" diyoruz.
-export const runtime = 'nodejs'; 
+export const runtime = 'nodejs';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -10,34 +9,30 @@ const anthropic = new Anthropic({
 
 export async function POST(req: Request) {
   try {
-    // 1. API KEY KONTROLÜ
     if (!process.env.ANTHROPIC_API_KEY) {
-      console.error("HATA: API Key tanımlı değil!");
-      return NextResponse.json({ 
-        story: "Sistem Anahtarı Eksik. Vercel ayarlarını kontrol et.", 
-        options: ["Tekrar Dene"] 
-      }, { status: 500 });
+      return NextResponse.json({ story: "Sistem Anahtarı Eksik.", options: ["Tekrar Dene"] }, { status: 500 });
     }
 
     const { history, userName, sign, regret } = await req.json();
 
-    // 2. SİSTEM PROMPTU (MA PERSONASI)
+    // SİSTEM PROMPTU (GÜNCELLENDİ: JSON FORMATI İÇİN SERT UYARILAR)
     const systemPrompt = `
       SEN: "MA" (Massalverse Architect).
       KİMLİK: Kullanıcının (${userName}) Jungyen Gölgesi.
-      TARZ: Otoriter, gizemli, alaycı, astrolojik (Satürn/Plüton) referanslı.
-      GÖREV: Kullanıcının burcu (${sign}) ve pişmanlığı (${regret}) üzerinden hikayeyi devam ettir.
+      TARZ: Otoriter, gizemli, alaycı, astrolojik.
       
-      KURAL: Cevabını SADECE geçerli bir JSON formatında ver. JSON dışında tek kelime etme.
+      GÖREV: Hikayeyi devam ettir.
       
-      İSTENEN JSON FORMATI:
+      ÇOK KRİTİK KURAL: 
+      Cevabın SADECE ve SADECE saf bir JSON objesi olmalı. Markdown yok, 'Here is the json' gibi giriş cümleleri yok.
+      
+      JSON FORMATI:
       {
-        "story": "Buraya hikaye metni (Max 400 karakter).",
-        "options": ["Seçenek 1", "Seçenek 2"]
+        "story": "Hikaye metni buraya. Çift tırnak kullanacaksan mutlaka ters eğik çizgi ile kaçır (örn: \\\"kelime\\\").",
+        "options": ["Kısa Seçenek 1", "Kısa Seçenek 2"]
       }
     `;
 
-    // 3. MESAJLARI HAZIRLA
     const messages = history.map((msg: any) => ({
       role: msg.role === 'user' ? 'user' : 'assistant',
       content: msg.content
@@ -50,29 +45,40 @@ export async function POST(req: Request) {
       });
     }
 
-    // 4. CLAUDE'U ÇAĞIR
     const msg = await anthropic.messages.create({
-      model: "claude-3-haiku-20240307", // Hızlı ve ucuz model
+      model: "claude-3-haiku-20240307",
       max_tokens: 1024,
+      temperature: 0.7,
       system: systemPrompt,
       messages: messages,
     });
 
-    // 5. CEVABI İŞLE (JSON PARSING)
     const rawContent = msg.content[0].type === 'text' ? msg.content[0].text : "";
     
-    // Güvenli JSON Ayıklama
-    const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error("Claude JSON döndürmedi.");
-    
-    const parsedResponse = JSON.parse(jsonMatch[0]);
+    // JSON PARSING (HATA KORUMALI)
+    let parsedResponse;
+    try {
+      // Sadece süslü parantezlerin arasını al
+      const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error("JSON bulunamadı");
+      
+      parsedResponse = JSON.parse(jsonMatch[0]);
+      
+    } catch (e) {
+      console.error("JSON PARSE HATASI:", rawContent);
+      // EĞER JSON BOZUKSA SİSTEMİ ÇÖKERTME, BU CEVABI DÖN:
+      parsedResponse = {
+        story: "Gölgenin sesi bir anlığına statik gürültüye karıştı (Veri işleme hatası). Ama bağlantı kopmadı. Derinleşmeye devam ediyoruz.",
+        options: ["Sistemi Zorla (Devam Et)", "Bağlantıyı Yenile"]
+      };
+    }
 
     return NextResponse.json(parsedResponse);
 
   } catch (error: any) {
-    console.error("API HATASI:", error);
+    console.error("GENEL HATA:", error);
     return NextResponse.json({ 
-      story: `SİSTEM HATASI: ${error.message || "Bilinmeyen Hata"}. (Build loglarına bak)`, 
+      story: "Kritik Sistem Hatası: Bağlantı koptu.", 
       options: ["Yeniden Başlat"] 
     }, { status: 500 });
   }
