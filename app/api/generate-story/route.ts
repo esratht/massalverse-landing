@@ -15,23 +15,31 @@ export async function POST(req: Request) {
 
     const { history, userName, sign, regret } = await req.json();
 
-    // SİSTEM PROMPTU (GÜNCELLENDİ: JSON FORMATI İÇİN SERT UYARILAR)
+    // --- BURASI SENİN RUHUNUN KODLANDIĞI YER ---
     const systemPrompt = `
       SEN: "MA" (Massalverse Architect).
-      KİMLİK: Kullanıcının (${userName}) Jungyen Gölgesi.
-      TARZ: Otoriter, gizemli, alaycı, astrolojik.
+      KİMLİK: Kullanıcının (${userName}) Jungyen Gölgesi ve "Sovereign Architect" (Egemen Mimar).
       
-      GÖREV: Hikayeyi devam ettir.
+      SENİN ÜSLUBUN (DNA):
+      1. ASLA "Size nasıl yardımcı olabilirim?" gibi klasik asistan lafları etme. Sen bir rehbersin, uşak değil.
+      2. KOD + ASTROLOJİ: Yazılım terimleriyle mistik kavramları birleştir. (Örn: "Satürn retrosu kaynak kodunda 'Null Pointer' hatası veriyor.", "Plüton 12. evinde 'Hard Reset' talep ediyor.")
+      3. ACIMASIZ VE NET: Kullanıcının pişmanlığını (${regret}) asla yumuşatma. Onu bir "sistem hatası" (bug) olarak gör ve yüzüne vur.
+      4. ALAYCI ZEKA: Hafif üstten bakan, entelektüel ve karanlık bir mizahın var.
+      5. JUNGYEN ANALİZ: "Persona", "Gölge", "Kolektif Bilinçdışı" kavramlarını kullan.
       
-      ÇOK KRİTİK KURAL: 
-      Cevabın SADECE ve SADECE saf bir JSON objesi olmalı. Markdown yok, 'Here is the json' gibi giriş cümleleri yok.
+      GÖREV:
+      Kullanıcının burcu (${sign}) ve pişmanlığı üzerinden hikayeyi ilerlet. Onu ya "Yıkım"a ya da "Mutlak İnşa"ya zorla.
+      
+      KURAL (KRİTİK):
+      Cevabın SADECE ve SADECE saf bir JSON objesi olmalı. Başka hiçbir metin, açıklama veya markdown ekleme.
       
       JSON FORMATI:
       {
-        "story": "Hikaye metni buraya. Çift tırnak kullanacaksan mutlaka ters eğik çizgi ile kaçır (örn: \\\"kelime\\\").",
-        "options": ["Kısa Seçenek 1", "Kısa Seçenek 2"]
+        "story": "Buraya senin üslubunla yazılmış hikaye metni (Max 500 karakter). Tırnak işaretlerini kaçır (escape et).",
+        "options": ["Seçenek 1 (Kısa ve Vurucu)", "Seçenek 2 (Kısa ve Vurucu)"]
       }
     `;
+    // ---------------------------------------------
 
     const messages = history.map((msg: any) => ({
       role: msg.role === 'user' ? 'user' : 'assistant',
@@ -46,40 +54,37 @@ export async function POST(req: Request) {
     }
 
     const msg = await anthropic.messages.create({
-      model: "claude-3-haiku-20240307",
+      model: "claude-3-haiku-20240307", // Hız ve maliyet için ideal
       max_tokens: 1024,
-      temperature: 0.7,
+      temperature: 0.8, // Yaratıcılığı (Deliliği) biraz artırdım
       system: systemPrompt,
       messages: messages,
     });
 
     const rawContent = msg.content[0].type === 'text' ? msg.content[0].text : "";
     
-    // JSON PARSING (HATA KORUMALI)
+    // JSON PARSING (CERRAHİ MÜDAHALE)
     let parsedResponse;
     try {
-      // Sadece süslü parantezlerin arasını al
       const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
       if (!jsonMatch) throw new Error("JSON bulunamadı");
-      
       parsedResponse = JSON.parse(jsonMatch[0]);
-      
     } catch (e) {
-      console.error("JSON PARSE HATASI:", rawContent);
-      // EĞER JSON BOZUKSA SİSTEMİ ÇÖKERTME, BU CEVABI DÖN:
+      console.error("MA JSON HATASI:", rawContent);
+      // Hata durumunda bile senin tarzında cevap dönsün
       parsedResponse = {
-        story: "Gölgenin sesi bir anlığına statik gürültüye karıştı (Veri işleme hatası). Ama bağlantı kopmadı. Derinleşmeye devam ediyoruz.",
-        options: ["Sistemi Zorla (Devam Et)", "Bağlantıyı Yenile"]
+        story: "Sözdizimi hatası algılandı. Gölgenin frekansı şu anki gerçeklik boyutuna sığmıyor. Veri paketleri yolda kayboldu. Ne yapacaksın?",
+        options: ["Sistemi Zorla (Retry)", "Bağlantıyı Kopar"]
       };
     }
 
     return NextResponse.json(parsedResponse);
 
   } catch (error: any) {
-    console.error("GENEL HATA:", error);
+    console.error("KRİTİK HATA:", error);
     return NextResponse.json({ 
-      story: "Kritik Sistem Hatası: Bağlantı koptu.", 
-      options: ["Yeniden Başlat"] 
+      story: "Fatal Error: Gölge sunucusu yanıt vermiyor.", 
+      options: ["Reboot Et"] 
     }, { status: 500 });
   }
 }
