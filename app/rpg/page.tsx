@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 
-// TİP TANIMLAMALARI
 type GameTurn = {
   role: 'user' | 'assistant';
   content: string; 
@@ -11,31 +10,35 @@ type GameTurn = {
 };
 
 export default function RpgPage() {
-  // STATE YÖNETİMİ
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({ name: '', sign: '', regret: '' });
   const [avatarUrl, setAvatarUrl] = useState('');
    
   const [gameHistory, setGameHistory] = useState<GameTurn[]>([]);
   const [loading, setLoading] = useState(false);
-  const [showShareModal, setShowShareModal] = useState(false);
-  const [shareContent, setShareContent] = useState('');
-   
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // --- AVATAR DİNLEYİCİSİ (MANUEL IFRAME) ---
+  // --- GÜÇLENDİRİLMİŞ AVATAR DİNLEYİCİSİ ---
   useEffect(() => {
     const receiveMessage = (event: any) => {
-        // Güvenlik: Sadece Ready Player Me kaynaklı mesajlara bak
-        const source = event.data?.source;
-        if (source !== 'readyplayerme') return;
+        // Güvenlik: Sadece Ready Player Me'den gelenleri dinle
+        // Bazen string gelir, bazen obje. Garantiye alalım:
+        let data = event.data;
+        try {
+            if (typeof data === 'string') data = JSON.parse(data);
+        } catch (e) {
+            // JSON değilse boşver
+        }
 
-        // Avatar bittiğinde (v1.avatar.exported)
-        if (event.data?.eventName === 'v1.avatar.exported') {
-            console.log("AVATAR YAKALANDI:", event.data.data.url);
-            setAvatarUrl(event.data.data.url);
-            setStep(3); // Oyuna fırlat
-            startGame();
+        const source = data?.source;
+        
+        if (source === 'readyplayerme') {
+            // Avatar Export edildiğinde
+            if (data.eventName === 'v1.avatar.exported') {
+                console.log("OTONOM GEÇİŞ TETİKLENDİ:", data.data.url);
+                setAvatarUrl(data.data.url);
+                triggerGameStart(data.data.url); // Oyunu başlat
+            }
         }
     };
 
@@ -47,7 +50,16 @@ export default function RpgPage() {
         window.removeEventListener('message', receiveMessage);
     };
   }, [step]);
-  // ------------------------------------------
+
+  // Oyunu başlatan yardımcı fonksiyon
+  const triggerGameStart = (url: string) => {
+      setAvatarUrl(url); // URL'i kaydet
+      setStep(3); // Adım atla
+      // State güncellenmesi asenkron olduğu için gecikmeli başlatıyoruz
+      setTimeout(() => {
+          startGame(url); 
+      }, 100);
+  };
 
   // OTOMATİK SCROLL
   useEffect(() => {
@@ -56,19 +68,18 @@ export default function RpgPage() {
     }
   }, [gameHistory.length, loading]);
 
-  // FORM GİRİŞİ
   const handleInput = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // OYUN MOTORU (SİMÜLASYON)
-  const startGame = async () => {
+  // OYUN MOTORU
+  const startGame = async (currentAvatarUrl?: string) => {
     setLoading(true);
-    // Burası Backend API'ye bağlanacak yer. Şimdilik simülasyon:
+    // Simülasyon: Chatbot Analizi Başlıyor
     setTimeout(() => {
         setGameHistory([{ 
             role: 'assistant', 
-            content: `Sisteme hoş geldin ${formData.name}. Demek ${formData.sign} burcunun lanetiyle başın dertte ve "${formData.regret}" diyerek pişmanlık duyuyorsun.\n\nAnaliz tamamlandı. Kaderini yeniden yazmak için sana iki kapı açıyorum:`, 
+            content: `Sisteme hoş geldin ${formData.name}. Görüyorum ki ${formData.sign} burcunun yıldız haritasındaki o karanlık noktadasın.\n\n"${formData.regret}" diyorsun...\n\nAvatarın (${currentAvatarUrl ? 'Yüklendi' : 'Gizli'}) ve verilerin analiz edildi. Bu pişmanlık, sistemde bir 'Bug' değil, bir 'Feature' (Özellik) olarak görünüyor. Şimdi seçim senin:`, 
             options: ["Eskiye dön ve savaş (Mars)", "Her şeyi yak ve git (Plüton)"]
         }]);
         setLoading(false);
@@ -80,11 +91,10 @@ export default function RpgPage() {
     setGameHistory(newHistory);
     setLoading(true);
 
-    // Seçim Simülasyonu
     setTimeout(() => {
         setGameHistory(prev => [...prev, { 
             role: 'assistant', 
-            content: `Cesurca bir hamle: "${choice}". Ama unutma, Massalverse'de her seçimin bir bedeli vardır. Şimdi önünde yeni bir yol ayrımı belirdi.`, 
+            content: `"${choice}"... İlginç. Bu seçim, bilinçaltındaki KAD Yengeç döngüsünü tetikledi. Massalverse'de pişmanlık yoktur, sadece versiyon güncellemeleri vardır. Devam ediyoruz.`, 
             options: ["Sistemi Hackle", "Teslim Ol", "Baştan Başla"] 
         }]);
         setLoading(false);
@@ -100,14 +110,12 @@ export default function RpgPage() {
      }
   };
 
-  // --- RENDER ---
   return (
-    // EKRAN YAPISI: h-screen (Tam Boy), flex-col (Dikey Dizilim)
     <div className="h-screen w-full text-cyan-400 font-mono flex flex-col items-center bg-black overflow-hidden relative">
        
-      {/* HEADER (ÜST KISIM) - Sabit Yükseklik */}
+      {/* HEADER */}
       <div className="w-full h-16 border-b border-cyan-800 flex justify-between items-center px-4 bg-black/90 shrink-0 z-50">
-        <Link href="/" className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500 tracking-widest hover:opacity-80">
+        <Link href="/" className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500 tracking-widest">
           NO_REGRET_MACHINE
         </Link>
         <div className="flex items-center gap-3">
@@ -120,99 +128,66 @@ export default function RpgPage() {
         </div>
       </div>
 
-      {/* ANA İÇERİK ALANI - flex-1 ile kalan tüm alanı kaplar */}
       <div className="flex-1 w-full flex items-center justify-center p-4 relative overflow-hidden">
-        
-        {/* ARKA PLAN EFEKTLERİ */}
         <div className="absolute inset-0 cyber-grid opacity-20 pointer-events-none"></div>
 
-        {/* --- ADIM 1: GİRİŞ FORMU --- */}
+        {/* ADIM 1: GİRİŞ FORMU */}
         {step === 1 && (
           <div className="w-full max-w-md border border-cyan-500/50 bg-black/80 p-6 shadow-[0_0_50px_rgba(6,182,212,0.2)] animate-in zoom-in duration-300 relative z-10">
-            <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-cyan-500"></div>
-            <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-pink-500"></div>
-
             <h2 className="text-xl text-pink-500 font-bold mb-6 tracking-[0.2em] border-l-4 border-pink-500 pl-4">
               KİMLİK_PROTOKOLÜ
             </h2>
-            
             <div className="space-y-4">
-               {/* İsim */}
                <div>
                  <label className="text-[10px] text-cyan-600 block mb-1">KOD ADIN</label>
-                 <input 
-                   name="name" 
-                   value={formData.name}
-                   onChange={handleInput} 
-                   placeholder="Giriş yap..." 
-                   className="w-full bg-gray-900/50 text-cyan-400 p-3 border border-gray-700 outline-none focus:border-cyan-500 transition"
-                 />
+                 <input name="name" value={formData.name} onChange={handleInput} placeholder="Giriş yap..." className="w-full bg-gray-900/50 text-cyan-400 p-3 border border-gray-700 outline-none focus:border-cyan-500"/>
                </div>
-
-               {/* Burçlar - TAM LİSTE */}
                <div>
                  <label className="text-[10px] text-cyan-600 block mb-1">YILDIZ KONUMU</label>
-                 <select 
-                   name="sign" 
-                   value={formData.sign}
-                   onChange={handleInput} 
-                   className="w-full bg-gray-900/50 text-cyan-400 p-3 border border-gray-700 outline-none focus:border-cyan-500 cursor-pointer"
-                 >
+                 <select name="sign" value={formData.sign} onChange={handleInput} className="w-full bg-gray-900/50 text-cyan-400 p-3 border border-gray-700 outline-none focus:border-cyan-500">
                     <option value="">BURÇ SEÇİNİZ...</option>
-                    <option value="Koç">KOÇ (Aries)</option>
-                    <option value="Boğa">BOĞA (Taurus)</option>
-                    <option value="İkizler">İKİZLER (Gemini)</option>
-                    <option value="Yengeç">YENGEÇ (Cancer)</option>
-                    <option value="Aslan">ASLAN (Leo)</option>
-                    <option value="Başak">BAŞAK (Virgo)</option>
-                    <option value="Terazi">TERAZİ (Libra)</option>
-                    <option value="Akrep">AKREP (Scorpio)</option>
-                    <option value="Yay">YAY (Sagittarius)</option>
-                    <option value="Oğlak">OĞLAK (Capricorn)</option>
-                    <option value="Kova">KOVA (Aquarius)</option>
-                    <option value="Balık">BALIK (Pisces)</option>
+                    <option value="Koç">KOÇ</option>
+                    <option value="Boğa">BOĞA</option>
+                    <option value="İkizler">İKİZLER</option>
+                    <option value="Yengeç">YENGEÇ</option>
+                    <option value="Aslan">ASLAN</option>
+                    <option value="Başak">BAŞAK</option>
+                    <option value="Terazi">TERAZİ</option>
+                    <option value="Akrep">AKREP</option>
+                    <option value="Yay">YAY</option>
+                    <option value="Oğlak">OĞLAK</option>
+                    <option value="Kova">KOVA</option>
+                    <option value="Balık">BALIK</option>
                  </select>
                </div>
-
-               {/* Keşke */}
                <div>
                  <label className="text-[10px] text-cyan-600 block mb-1">SİSTEM ARIZASI (KEŞKE)</label>
-                 <textarea 
-                   name="regret" 
-                   value={formData.regret}
-                   onChange={handleInput} 
-                   rows={3}
-                   placeholder="Pişmanlığını veriye dönüştür..." 
-                   className="w-full bg-gray-900/50 text-pink-400 p-3 border border-gray-700 outline-none focus:border-pink-500 resize-none"
-                 />
+                 <textarea name="regret" value={formData.regret} onChange={handleInput} rows={3} placeholder="Pişmanlığını veriye dönüştür..." className="w-full bg-gray-900/50 text-pink-400 p-3 border border-gray-700 outline-none focus:border-pink-500 resize-none"/>
                </div>
-
-               <button 
-                 onClick={() => { 
-                   if(formData.name && formData.sign && formData.regret) setStep(2); 
-                   else alert("EKSİK VERİ: Lütfen tüm alanları doldurun.");
-                 }} 
-                 className="w-full mt-2 bg-cyan-900/20 border border-cyan-500 text-cyan-400 py-4 font-bold tracking-widest hover:bg-cyan-500 hover:text-black transition group relative overflow-hidden"
-               >
-                 <span className="relative z-10">BAĞLANTIYI KUR ►</span>
-                 <div className="absolute inset-0 bg-cyan-400 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></div>
+               <button onClick={() => { if(formData.name && formData.sign && formData.regret) setStep(2); else alert("EKSİK VERİ!"); }} className="w-full mt-2 bg-cyan-900/20 border border-cyan-500 text-cyan-400 py-4 font-bold tracking-widest hover:bg-cyan-500 hover:text-black transition">
+                 BAĞLANTIYI KUR ►
                </button>
             </div>
           </div>
         )}
 
-        {/* --- ADIM 2: AVATAR YARATICI (DÜZELTİLDİ: TAM EKRAN KAPLAMA) --- */}
+        {/* ADIM 2: AVATAR YARATICI (MANUEL BUTONLU) */}
         {step === 2 && (
-          // flex-1 ve w-full ile container tüm boşluğu doldurur. h-full ile yükseklik garantilenir.
           <div className="w-full h-full max-w-7xl border-2 border-pink-500 relative shadow-[0_0_30px_rgba(236,72,153,0.3)] bg-black animate-in zoom-in duration-500 flex flex-col">
             
-            {/* Üst Bilgi Çubuğu */}
-            <div className="bg-pink-500 text-black text-xs px-3 py-1 font-bold flex justify-between items-center shrink-0">
-                <span>AVATAR_BUILDER.EXE</span>
-                <span className="animate-pulse">● CANLI BAĞLANTI</span>
+            {/* Üst Bilgi Çubuğu + MANUEL BUTON */}
+            <div className="bg-pink-500 text-black px-3 py-2 font-bold flex justify-between items-center shrink-0">
+                <span className="text-xs">AVATAR_BUILDER.EXE</span>
+                
+                {/* İŞTE CAN KURTARAN BUTON */}
+                <button 
+                    onClick={() => triggerGameStart("https://models.readyplayer.me/64b...glb")} // Varsayılan bir avatar URL ile geçer
+                    className="bg-black text-pink-500 px-3 py-1 text-xs border border-black hover:bg-white hover:text-pink-600 transition animate-pulse"
+                >
+                    AVATAR HAZIRSA TIKLA ►
+                </button>
             </div>
             
-            {/* IFRAME: flex-1 ile kalan tüm yeri alır */}
             <iframe
               src="https://demo.readyplayer.me/avatar?frameApi" 
               className="w-full flex-1 border-0"
@@ -222,11 +197,9 @@ export default function RpgPage() {
           </div>
         )}
 
-        {/* --- ADIM 3: OYUN EKRANI --- */}
+        {/* ADIM 3: OYUN EKRANI */}
         {step === 3 && (
           <div className="w-full max-w-4xl h-full border border-gray-800 bg-black/90 flex flex-col relative shadow-2xl animate-in slide-in-from-bottom-10">
-             
-             {/* Mesaj Alanı */}
              <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 pb-32 custom-scrollbar">
                 {gameHistory.map((turn, i) => (
                     <div key={i} className={`flex flex-col ${turn.role === 'user' ? 'items-end' : 'items-start'} animate-in fade-in slide-in-from-bottom-2`}>
@@ -248,7 +221,6 @@ export default function RpgPage() {
                 )}
              </div>
 
-             {/* Seçenekler Alanı (Sabit Alt) */}
              {gameHistory.length > 0 && gameHistory[gameHistory.length - 1].role === 'assistant' && !loading && (
                  <div className="absolute bottom-0 left-0 w-full bg-black/95 border-t border-cyan-900 p-4 backdrop-blur-sm">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -270,7 +242,6 @@ export default function RpgPage() {
              )}
           </div>
         )}
-
       </div>
     </div>
   );
