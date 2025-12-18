@@ -17,26 +17,25 @@ export default function RpgPage() {
   const [gameHistory, setGameHistory] = useState<GameTurn[]>([]);
   const [loading, setLoading] = useState(false);
   
-  // --- YENİ EKLENEN STATE'LER (SES VE PAYLAŞIM İÇİN) ---
+  // SES VE PAYLAŞIM STATE'LERİ
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareContent, setShareContent] = useState('');
   
   const scrollRef = useRef<HTMLDivElement>(null);
+  // Ses sentezleyicisi referansı
+  const synth = typeof window !== 'undefined' ? window.speechSynthesis : null;
 
   // --- AVATAR DİNLEYİCİSİ ---
   useEffect(() => {
     const receiveMessage = (event: any) => {
         let data = event.data;
         try { if (typeof data === 'string') data = JSON.parse(data); } catch (e) {}
-
         if (data?.source === 'readyplayerme' && data.eventName === 'v1.avatar.exported') {
-            console.log("GÖLGE YAKALANDI:", data.data.url);
             setAvatarUrl(data.data.url);
             triggerGameStart(data.data.url);
         }
     };
-
     if (step === 2) window.addEventListener('message', receiveMessage);
     return () => window.removeEventListener('message', receiveMessage);
   }, [step]);
@@ -44,7 +43,7 @@ export default function RpgPage() {
   const triggerGameStart = (url: string) => {
       setAvatarUrl(url);
       setStep(3);
-      setTimeout(() => startGame(url), 100);
+      setTimeout(() => startStoryLogic(url), 100);
   };
 
   useEffect(() => {
@@ -55,46 +54,91 @@ export default function RpgPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // --- MOCK CLAUDE API (GÖLGE PERSONASI) ---
-  const startGame = async (currentAvatarUrl?: string) => {
+  // --- GERÇEKÇİ SES MOTORU (WEB SPEECH API) ---
+  const handleSpeak = (text: string, index: number) => {
+    if (!synth) return;
+
+    // Eğer şu an bu mesaj okunuyorsa durdur
+    if (playingIndex === index) {
+        synth.cancel();
+        setPlayingIndex(null);
+        return;
+    }
+
+    // Başka bir şey okunuyorsa onu sustur
+    synth.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'tr-TR'; // Türkçe konuş
+    utterance.rate = 0.9; // Biraz yavaş ve otoriter
+    utterance.pitch = 0.8; // Biraz daha kalın ses (Gölge efekti)
+
+    utterance.onend = () => setPlayingIndex(null);
+    utterance.onerror = () => setPlayingIndex(null);
+
+    setPlayingIndex(index);
+    synth.speak(utterance);
+  };
+
+  // --- AKILLI SENARYO MOTORU (MOCK AI) ---
+  // Burası API olmadan mantıklı cevaplar üretir
+  const startStoryLogic = (currentAvatarUrl?: string) => {
     setLoading(true);
-    // BURASI NORMALDE CLAUDE API'YE GİDER. ŞİMDİLİK SENİN SESİNİ SİMÜLE EDİYORUZ:
     setTimeout(() => {
         setGameHistory([{ 
             role: 'assistant', 
-            content: `Merhaba ${formData.name}. Ben senin "Gölge" tarafınım. Hani şu topluma uyum sağlamak için bastırdığın, "ayıp olur" diye susturduğun ses.\n\n${formData.sign} burcunun o naifliğiyle "${formData.regret}" diyerek kendini yiyip bitiriyorsun. Komik. Oysa bu pişmanlık değil, sadece yanlış senaryoda oynadığın bir sahneydi.\n\nAvatarını giydin, maskeni taktın. Şimdi gerçek yüzleşme vakti. Ne yapıyoruz?`, 
-            options: ["O sahneyi yeniden çek (Yüzleş)", "Senaryoyu yırt at (İsyan Et)"]
-        }]);
-        setLoading(false);
-    }, 2000);
-  };
-
-  const makeChoice = async (choice: string) => {
-    const newHistory = [...gameHistory, { role: 'user', content: choice } as GameTurn];
-    setGameHistory(newHistory);
-    setLoading(true);
-
-    setTimeout(() => {
-        setGameHistory(prev => [...prev, { 
-            role: 'assistant', 
-            content: `"${choice}"... İşte beklediğim cevap. Bak, kurumsal yalanlar ve "elalem ne der" duvarları şu an çatırdıyor. Senin sorunun yeteneksizlik değil, "onaylanma açlığıydı".\n\nBen (Gölgen) diyorum ki; bu hikayenin kalemi artık başkasının elinde olamaz. Şimdi Massalverse'de otonom bir alan açıyoruz. Hazır mısın?`, 
-            options: ["Pikselleri Ateşle (Devam)", "Sistemi Hackle (Derinleş)", "Baştan Başla"] 
+            content: `Sisteme giriş yapıldı. Kod Adı: ${formData.name}.\n\nBurç: ${formData.sign}. Tipik bir ${formData.sign} özelliği olarak "${formData.regret}" diyerek kendini sabote etmişsin. Haritanı tarıyorum... Satürn, Ay düğümüne kare yapıyor. Yani bu pişmanlık tesadüf değil, bir sistem hatası.\n\nAvatarın (Gölgen) karşında. Şimdi bu hatayı nasıl debug edeceğiz?`, 
+            options: ["Hatayı Kabul Et (Yüzleş)", "Sistemi Formatla (İsyan Et)"]
         }]);
         setLoading(false);
     }, 1500);
   };
 
-  // --- SESLİ DİNLEME VE PAYLAŞIM FONKSİYONLARI ---
-  const playAudio = (text: string, index: number) => {
-      if (playingIndex === index) {
-          setPlayingIndex(null); // Durdur
-          // (Gerçekte audio.pause() yapılır)
-      } else {
-          setPlayingIndex(index); // Oynat
-          // (Burada ElevenLabs veya OpenAI TTS API çağrılır)
-          // Şimdilik simülasyon:
-          setTimeout(() => setPlayingIndex(null), 3000); 
-      }
+  const makeChoice = async (choice: string) => {
+    // Kullanıcı hamlesini ekle
+    const newHistory = [...gameHistory, { role: 'user', content: choice } as GameTurn];
+    setGameHistory(newHistory);
+    setLoading(true);
+
+    // --- MANTIK AĞACI (LOGIC TREE) ---
+    // API olmadığı için buradaki if/else bloklarıyla zeka simüle ediyoruz.
+    setTimeout(() => {
+        let reply = "";
+        let nextOptions: string[] = [];
+
+        // SENARYO 1: YÜZLEŞME
+        if (choice.includes("Yüzleş") || choice.includes("Kabul Et")) {
+            reply = `Yüzleşmek... ${formData.sign} burcunun pek sevdiği bir şey değildir ama sen cesur çıktın. Bu pişmanlık aslında senin suçun değil, sana yüklenen "iyi çocuk" yazılımının bir sonucuydu.\n\nŞimdi veritabanındaki o eski dosyayı siliyoruz. Yerine ne yazalım?`;
+            nextOptions = ["Mutlak Güç (Kariyer)", "Sınırsız Özgürlük (Kaos)", "Saf Huzur (İnziva)"];
+        } 
+        // SENARYO 2: İSYAN
+        else if (choice.includes("İsyan") || choice.includes("Formatla")) {
+            reply = `Format atıldı! Eski sen şu an geri dönüşüm kutusunda. Harika. Ama dikkat et, formatlanmış bir disk savunmasızdır.\n\nSistemin açığını bulduk. Buradan çıkış bileti senin elinde. Hangi kapıdan çıkıyoruz?`;
+            nextOptions = ["Arka Kapı (Hacker Yolu)", "Ana Kapı (Yıkıp Geç)", "Çatı Katı (Gözlemci Ol)"];
+        }
+        // SENARYO 3: GÜÇ / KARİYER
+        else if (choice.includes("Güç") || choice.includes("Kariyer")) {
+            reply = `Güç istiyorsun. Otonom bir imparatorluk... Tıpkı "Sovereign Architect" gibi. Ama bedeli var. Tüm duygularını 'Null' yapman gerekecek. Hazır mısın?`;
+            nextOptions = ["Duyguları Sil (Robotlaş)", "Vazgeç ve Geri Dön"];
+        }
+        // SENARYO 4: ÖZGÜRLÜK / KAOS
+        else if (choice.includes("Özgürlük") || choice.includes("Kaos") || choice.includes("Hacker")) {
+            reply = `Kaos... En sevdiğim. Kurallar yok, pişmanlık yok. Massalverse'in kaynak kodlarına eriştin. Artık kendi hikayeni kendin yazabilirsin.`;
+            nextOptions = ["Hikayeyi Bitir (Zafer)", "Sonsuz Döngüye Gir"];
+        }
+        // DEFAULT CEVAP (Eğer eşleşme yoksa)
+        else {
+            reply = `İlginç bir seçim: "${choice}". Sistem bunu beklemiyordu ama adapte oluyor. Yolculuk derinleşiyor. Artık geri dönüş yok.`;
+            nextOptions = ["Derine İniş", "Yüzeye Çıkış"];
+        }
+
+        setGameHistory(prev => [...prev, { 
+            role: 'assistant', 
+            content: reply, 
+            options: nextOptions 
+        }]);
+        setLoading(false);
+    }, 1500); // Düşünme süresi simülasyonu
   };
 
   const openShareModal = (text: string) => {
@@ -104,6 +148,7 @@ export default function RpgPage() {
 
   const resetGame = () => {
      if (confirm("Gölgenle vedalaşmak istiyor musun?")) {
+        if(synth) synth.cancel(); // Sesi sustur
         setStep(1); setGameHistory([]); setAvatarUrl(''); setFormData({ name: '', sign: '', regret: '' });
      }
   };
@@ -171,7 +216,7 @@ export default function RpgPage() {
           </div>
         )}
 
-        {/* STEP 3: CHAT (GÖLGE SOHBETİ) */}
+        {/* STEP 3: CHAT (AKILLI SOHBET) */}
         {step === 3 && (
           <div className="w-full max-w-4xl h-full border border-gray-800 bg-black/90 flex flex-col relative shadow-2xl animate-in slide-in-from-bottom-10">
              <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 pb-32 custom-scrollbar">
@@ -185,12 +230,16 @@ export default function RpgPage() {
                             {turn.role === 'assistant' && <span className="absolute -top-2 -left-2 text-[10px] bg-black border border-cyan-500 text-cyan-500 px-1">GÖLGE (MA)</span>}
                             {turn.content}
                             
-                            {/* --- AKSİYON BUTONLARI (MA İÇİN) --- */}
+                            {/* --- DÜZELTİLMİŞ AKSİYON BUTONLARI --- */}
                             {turn.role === 'assistant' && (
                                 <div className="mt-3 flex gap-2 border-t border-cyan-900/30 pt-2">
                                     <button 
-                                        onClick={() => playAudio(turn.content, i)}
-                                        className="text-[10px] flex items-center gap-1 text-pink-500 hover:text-pink-300 transition uppercase tracking-widest border border-pink-900/50 px-2 py-1 bg-black/40"
+                                        onClick={() => handleSpeak(turn.content, i)}
+                                        className={`text-[10px] flex items-center gap-1 transition uppercase tracking-widest border px-2 py-1 ${
+                                            playingIndex === i 
+                                            ? 'text-red-500 border-red-500 bg-red-900/20' 
+                                            : 'text-pink-500 border-pink-900/50 hover:text-pink-300 bg-black/40'
+                                        }`}
                                     >
                                         {playingIndex === i ? '■ DURDUR' : '▶ SESLİ DİNLE'}
                                     </button>
@@ -217,7 +266,7 @@ export default function RpgPage() {
                  <div className="absolute bottom-0 left-0 w-full bg-black/95 border-t border-cyan-900 p-4 backdrop-blur-sm">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {gameHistory[gameHistory.length - 1].options?.map((opt, idx) => (
-                            <button key={idx} onClick={() => { if(opt === "Baştan Başla") resetGame(); else makeChoice(opt); }} className="border border-pink-500/50 text-pink-400 py-3 px-4 hover:bg-pink-500 hover:text-black transition font-bold text-sm text-left truncate relative group">
+                            <button key={idx} onClick={() => { if(opt.includes("Baştan")) resetGame(); else makeChoice(opt); }} className="border border-pink-500/50 text-pink-400 py-3 px-4 hover:bg-pink-500 hover:text-black transition font-bold text-sm text-left truncate relative group">
                                 <span className="absolute left-2 opacity-0 group-hover:opacity-100 transition">►</span>
                                 <span className="group-hover:translate-x-4 transition-transform block">{opt}</span>
                             </button>
@@ -231,14 +280,14 @@ export default function RpgPage() {
         {/* --- PAYLAŞIM MODALI --- */}
         {showShareModal && (
             <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[100] p-4 backdrop-blur-sm" onClick={() => setShowShareModal(false)}>
-                <div className="w-full max-w-md bg-gray-950 border border-cyan-500 p-6 relative" onClick={e => e.stopPropagation()}>
+                <div className="w-full max-w-md bg-gray-950 border border-cyan-500 p-6 relative animate-in zoom-in duration-300" onClick={e => e.stopPropagation()}>
                     <h3 className="text-pink-500 font-bold mb-4 tracking-widest">GÖLGENİ PAYLAŞ</h3>
-                    <div className="bg-gray-900 p-4 mb-4 text-cyan-300 text-sm italic border-l-2 border-cyan-500">
-                        "{shareContent.substring(0, 150)}..."
+                    <div className="bg-gray-900 p-4 mb-4 text-cyan-300 text-sm italic border-l-2 border-cyan-500 overflow-y-auto max-h-32">
+                        "{shareContent}"
                     </div>
                     <div className="grid grid-cols-2 gap-3">
-                        <button className="bg-[#1DA1F2] text-white py-2 font-bold text-sm hover:opacity-80">X (TWITTER)</button>
-                        <button className="bg-[#25D366] text-white py-2 font-bold text-sm hover:opacity-80">WHATSAPP</button>
+                        <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent("Massalverse'de Gölgemle Yüzleştim: " + shareContent.substring(0,100) + "...")}`} target="_blank" className="bg-[#1DA1F2] text-white py-2 font-bold text-sm hover:opacity-80 flex items-center justify-center">X (TWITTER)</a>
+                        <a href={`https://wa.me/?text=${encodeURIComponent("Massalverse: " + shareContent.substring(0,200))}`} target="_blank" className="bg-[#25D366] text-white py-2 font-bold text-sm hover:opacity-80 flex items-center justify-center">WHATSAPP</a>
                     </div>
                     <button onClick={() => setShowShareModal(false)} className="w-full mt-4 text-gray-500 text-xs hover:text-white">KAPAT [X]</button>
                 </div>
