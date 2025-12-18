@@ -1,35 +1,44 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { NextResponse } from 'next/server';
 
-export const runtime = 'nodejs';
-
-// API Key kontrolü
-const apiKey = process.env.ANTHROPIC_API_KEY;
+// BU SATIR HAYAT KURTARIR: Vercel'e "Node.js kullan" diyoruz.
+export const runtime = 'nodejs'; 
 
 const anthropic = new Anthropic({
-  apiKey: apiKey || 'dummy_key', // Boşsa patlamasın ama hata versin
+  apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
 export async function POST(req: Request) {
   try {
-    // 1. Anahtar Kontrolü
-    if (!apiKey) {
-      throw new Error("API ANAHTARI BULUNAMADI (Vercel Environment Variables kontrol et)");
+    // 1. API KEY KONTROLÜ
+    if (!process.env.ANTHROPIC_API_KEY) {
+      console.error("HATA: API Key tanımlı değil!");
+      return NextResponse.json({ 
+        story: "Sistem Anahtarı Eksik. Vercel ayarlarını kontrol et.", 
+        options: ["Tekrar Dene"] 
+      }, { status: 500 });
     }
 
     const { history, userName, sign, regret } = await req.json();
 
+    // 2. SİSTEM PROMPTU (MA PERSONASI)
     const systemPrompt = `
       SEN: "MA" (Massalverse Architect).
       KİMLİK: Kullanıcının (${userName}) Jungyen Gölgesi.
-      TARZ: Otoriter, gizemli, hafif alaycı, astrolojik referanslı.
-      GÖREV: Hikayeyi devam ettir.
-      KURAL: SADECE geçerli bir JSON formatında cevap ver.
-      FORMAT: { "story": "Hikaye...", "options": ["Seçenek1", "Seçenek2"] }
+      TARZ: Otoriter, gizemli, alaycı, astrolojik (Satürn/Plüton) referanslı.
+      GÖREV: Kullanıcının burcu (${sign}) ve pişmanlığı (${regret}) üzerinden hikayeyi devam ettir.
+      
+      KURAL: Cevabını SADECE geçerli bir JSON formatında ver. JSON dışında tek kelime etme.
+      
+      İSTENEN JSON FORMATI:
+      {
+        "story": "Buraya hikaye metni (Max 400 karakter).",
+        "options": ["Seçenek 1", "Seçenek 2"]
+      }
     `;
 
-    // Mesajları hazırla
-    let messages: any[] = history.map((msg: any) => ({
+    // 3. MESAJLARI HAZIRLA
+    const messages = history.map((msg: any) => ({
       role: msg.role === 'user' ? 'user' : 'assistant',
       content: msg.content
     }));
@@ -37,46 +46,34 @@ export async function POST(req: Request) {
     if (messages.length === 0) {
       messages.push({
         role: "user",
-        content: `Ben ${userName}. Burcum ${sign}. Pişmanlığım: "${regret}". Başlat.`
+        content: `Ben ${userName}. Burcum ${sign}. Pişmanlığım: "${regret}". Analiz et.`
       });
     }
 
-    console.log("CLAUDE'A İSTEK GİDİYOR...");
-
+    // 4. CLAUDE'U ÇAĞIR
     const msg = await anthropic.messages.create({
-      model: "claude-3-haiku-20240307",
+      model: "claude-3-haiku-20240307", // Hızlı ve ucuz model
       max_tokens: 1024,
-      temperature: 0.7,
       system: systemPrompt,
       messages: messages,
     });
 
-    console.log("CLAUDE CEVAP VERDİ:", msg.content);
-
+    // 5. CEVABI İŞLE (JSON PARSING)
     const rawContent = msg.content[0].type === 'text' ? msg.content[0].text : "";
     
-    // JSON PARSING
-    let parsedResponse;
+    // Güvenli JSON Ayıklama
     const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("Claude JSON döndürmedi.");
     
-    if (jsonMatch) {
-        parsedResponse = JSON.parse(jsonMatch[0]);
-    } else {
-        throw new Error("Claude JSON döndürmedi: " + rawContent);
-    }
+    const parsedResponse = JSON.parse(jsonMatch[0]);
 
     return NextResponse.json(parsedResponse);
 
   } catch (error: any) {
     console.error("API HATASI:", error);
-    
-    // HATA MESAJINI DİREKT EKRANA BASIYORUZ (DEBUG İÇİN)
-    return NextResponse.json(
-      { 
-        story: `SİSTEM HATASI (DEBUG): ${error.message || error}`, 
-        options: ["Tekrar Dene"] 
-      },
-      { status: 500 }
-    );
+    return NextResponse.json({ 
+      story: `SİSTEM HATASI: ${error.message || "Bilinmeyen Hata"}. (Build loglarına bak)`, 
+      options: ["Yeniden Başlat"] 
+    }, { status: 500 });
   }
 }
