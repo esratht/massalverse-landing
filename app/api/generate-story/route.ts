@@ -3,7 +3,6 @@ import { NextResponse } from 'next/server';
 
 // Bu satır Vercel'de kodun Node.js ortamında çalışmasını garantiler (Daha kararlı)
 export const runtime = 'nodejs';
-
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
