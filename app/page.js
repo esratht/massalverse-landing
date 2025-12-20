@@ -3,10 +3,6 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Home() {
-  // AKIŞ HARİTASI:
-  // 1. MÜHENDİS: kintsugi->intro->mum -> muh -> atakm -> priz -> halis -> tv...
-  // 2. EV KIZI:   kintsugi->intro->mum -> evkizi -> atakb -> halis -> manti -> tv...
-  
   const [stage, setStage] = useState('kintsugi'); 
   const [userProfile, setUserProfile] = useState({ role: "" });
   const [storyText, setStoryText] = useState("");
@@ -14,33 +10,31 @@ export default function Home() {
 
   const videoRef = useRef(null);
 
-  // --- 1. DOSYA EŞLEŞTİRME ---
+  // --- 1. DOSYA EŞLEŞTİRME (HEPSİ ARTIK .webm) ---
   const getVideoFile = () => {
     switch(stage) {
-        case 'kintsugi': return "/videos/kintsugi.mp4";
-        case 'intro': return "/videos/giris.mp4";
-        case 'childhood': return "/videos/mum.mp4";
+        case 'kintsugi': return "/videos/kintsugi.webm";
+        case 'intro': return "/videos/giris.webm";
+        case 'childhood': return "/videos/mum.webm";
         
-        // MÜHENDİS ZİNCİRİ
-        case 'muh': return "/videos/muh.mp4";
-        case 'atakm': return "/videos/atakm.mp4";
-        case 'priz': return "/videos/priz.mp4";
-
-        // EV KIZI ZİNCİRİ
-        case 'evkizi': return "/videos/evkizi.mp4";
-        case 'atakb': return "/videos/atakb.mp4";
-        case 'manti': return "/videos/manti.mp4";
-
-        // ORTAK / ÇOKLU KULLANIM
-        case 'halis': return "/videos/halis.mp4"; // İki rolde de var
-        case 'tv': return "/videos/tv.mp4";
-        case 'el': return "/videos/el.mp4";
-        case 'tvel': return "/videos/tvel.mp4";
-        case 'anneel': return "/videos/anneel.mp4";
-        case 'uzuntu': return "/videos/uzuntu.mp4";
-        case 'theend': return "/videos/theend.mp4";
+        // MÜHENDİS YOLU
+        case 'attack_muh': return "/videos/muh.webm";
+        case 'socket': return "/videos/priz.webm";
         
-        default: return "/videos/kintsugi.mp4";
+        // EV KIZI YOLU
+        case 'attack_bilge': return "/videos/evkizi.webm";
+        case 'kitchen': return "/videos/manti.webm";
+        
+        // ORTAK TÜNEL
+        case 'halis': return "/videos/halis.webm";
+        case 'tv': return "/videos/tv.webm";
+        case 'el': return "/videos/el.webm";
+        case 'tvel': return "/videos/tvel.webm";
+        case 'anneel': return "/videos/anneel.webm";
+        case 'uzuntu': return "/videos/uzuntu.webm";
+        case 'theend': return "/videos/theend.webm";
+        
+        default: return "/videos/kintsugi.webm";
     }
   };
 
@@ -67,46 +61,34 @@ export default function Home() {
     }
   }, [stage, audioAllowed]);
 
-  // --- 3. OTOMATİK GEÇİŞ (ZİNCİR MANTIĞI) ---
+  // --- 3. ZİNCİRLEME GEÇİŞ ---
   const handleVideoEnd = () => {
-    // Giriş
     if (stage === 'kintsugi') setStage('intro');
     else if (stage === 'intro') setStage('childhood');
-    else if (stage === 'childhood') videoRef.current.play(); // Seçim bekle
+    else if (stage === 'childhood') videoRef.current.play(); 
 
-    // --- MÜHENDİS YOLU ---
-    else if (stage === 'muh') setStage('atakm');
+    else if (stage === 'muh') setStage('atakm'); // Mühendis Başlangıç
     else if (stage === 'atakm') setStage('priz');
     else if (stage === 'priz') setStage('halis');
 
-    // --- EV KIZI YOLU ---
-    else if (stage === 'evkizi') setStage('atakb');
-    else if (stage === 'atakb') setStage('halis'); // Burada halis'e gidiyor
+    else if (stage === 'evkizi') setStage('atakb'); // Ev Kızı Başlangıç
+    else if (stage === 'atakb') setStage('halis'); 
 
-    // --- KRİTİK KAVŞAK (HALİS) ---
     else if (stage === 'halis') {
-        if (userProfile.role === 'Ev Kızı') {
-            setStage('manti'); // Ev kızıysa Mantı'ya git
-        } else {
-            setStage('tv'); // Mühendisse direkt TV'ye git
-        }
+        if (userProfile.role === 'Ev Kızı') setStage('manti');
+        else setStage('tv');
     }
-    
-    // --- EV KIZI EKSTRA (MANTI) ---
-    else if (stage === 'manti') setStage('tv'); // Mantıdan sonra TV'ye bağlan
+    else if (stage === 'manti') setStage('tv');
 
-    // --- ORTAK TÜNEL ---
     else if (stage === 'tv') setStage('el');
     else if (stage === 'el') setStage('tvel');
     else if (stage === 'tvel') setStage('anneel');
     else if (stage === 'anneel') setStage('uzuntu');
     else if (stage === 'uzuntu') setStage('theend');
     
-    // --- FİNAL ---
     else if (stage === 'theend') videoRef.current.pause();
   };
 
-  // --- 4. ETKİLEŞİMLER ---
   const enterSimulation = () => {
     setAudioAllowed(true);
     if (videoRef.current) {
@@ -117,12 +99,10 @@ export default function Home() {
 
   const makeChoice = (role) => {
     setUserProfile({ role });
-    // İLK VİDEOYU BAŞLAT
-    if (role === 'Mühendis') setStage('muh');
-    else setStage('evkizi');
+    if (role === 'Mühendis') setStage('muh'); // .webm olacak
+    else setStage('evkizi'); // .webm olacak
   };
 
-  // --- STİL ---
   const css = `
     .main-stage { position: relative; height: 100vh; width: 100vw; background: black; overflow: hidden; font-family: 'Courier New', monospace; }
     .video-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
@@ -166,7 +146,7 @@ export default function Home() {
             onEnded={handleVideoEnd}
             muted={!audioAllowed}
         >
-            <source src={getVideoFile()} type="video/mp4" />
+            <source src={getVideoFile()} type="video/webm" />
         </video>
       </div>
 
