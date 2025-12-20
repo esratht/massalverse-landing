@@ -10,20 +10,23 @@ export default function Home() {
 
   const videoRef = useRef(null);
 
-  // --- 1. DOSYA EŞLEŞTİRME (HEPSİ ARTIK .webm) ---
+  // --- 1. DOSYA EŞLEŞTİRME (HEPSİ .webm ve İSİMLER DÜZELTİLDİ) ---
   const getVideoFile = () => {
     switch(stage) {
         case 'kintsugi': return "/videos/kintsugi.webm";
         case 'intro': return "/videos/giris.webm";
         case 'childhood': return "/videos/mum.webm";
         
-        // MÜHENDİS YOLU
-        case 'attack_muh': return "/videos/muh.webm";
-        case 'socket': return "/videos/priz.webm";
+        // MÜHENDİS YOLU (DÜZELTİLDİ: Artık 'muh' sahnesi var)
+        case 'muh': return "/videos/muh.webm";
+        case 'atakm': return "/videos/atakm.webm";
+        case 'priz': return "/videos/priz.webm";
         
-        // EV KIZI YOLU
-        case 'attack_bilge': return "/videos/evkizi.webm";
-        case 'kitchen': return "/videos/manti.webm";
+        // EV KIZI YOLU (DÜZELTİLDİ: Artık 'evkizi' sahnesi var)
+        case 'evkizi': return "/videos/evkizi.webm";
+        case 'atakb': return "/videos/atakb.webm";
+        case 'manti': return "/videos/manti.webm"; // Manti sahnesi ev kizi için
+        case 'kitchen': return "/videos/manti.webm"; // Eski koddan kalma yedek
         
         // ORTAK TÜNEL
         case 'halis': return "/videos/halis.webm";
@@ -38,7 +41,7 @@ export default function Home() {
     }
   };
 
-  // --- 2. SAHNE YÖNETİCİSİ ---
+  // --- 2. SAHNE YÖNETİCİSİ (BACKEND) ---
   useEffect(() => {
     if (!audioAllowed) return; 
 
@@ -61,31 +64,38 @@ export default function Home() {
     }
   }, [stage, audioAllowed]);
 
-  // --- 3. ZİNCİRLEME GEÇİŞ ---
+  // --- 3. OTOMATİK GEÇİŞ (ZİNCİR MANTIĞI) ---
   const handleVideoEnd = () => {
     if (stage === 'kintsugi') setStage('intro');
     else if (stage === 'intro') setStage('childhood');
-    else if (stage === 'childhood') videoRef.current.play(); 
+    else if (stage === 'childhood') videoRef.current.play(); // Seçim bekle
 
-    else if (stage === 'muh') setStage('atakm'); // Mühendis Başlangıç
+    // --- MÜHENDİS YOLU ---
+    else if (stage === 'muh') setStage('atakm'); // muh.webm bitti -> atakm'ye geç
     else if (stage === 'atakm') setStage('priz');
     else if (stage === 'priz') setStage('halis');
 
-    else if (stage === 'evkizi') setStage('atakb'); // Ev Kızı Başlangıç
+    // --- EV KIZI YOLU ---
+    else if (stage === 'evkizi') setStage('atakb'); // evkizi.webm bitti -> atakb'ye geç
     else if (stage === 'atakb') setStage('halis'); 
 
+    // --- HALİS (KAVŞAK) ---
     else if (stage === 'halis') {
-        if (userProfile.role === 'Ev Kızı') setStage('manti');
-        else setStage('tv');
+        if (userProfile.role === 'Ev Kızı') setStage('manti'); // Ev kızıysa mantıya
+        else setStage('tv'); // Mühendisse TV'ye
     }
-    else if (stage === 'manti') setStage('tv');
+    
+    // --- MANTI (EV KIZI İÇİN ARA DURAK) ---
+    else if (stage === 'manti') setStage('tv'); 
 
+    // --- ORTAK TÜNEL ---
     else if (stage === 'tv') setStage('el');
     else if (stage === 'el') setStage('tvel');
     else if (stage === 'tvel') setStage('anneel');
     else if (stage === 'anneel') setStage('uzuntu');
     else if (stage === 'uzuntu') setStage('theend');
     
+    // --- FİNAL ---
     else if (stage === 'theend') videoRef.current.pause();
   };
 
@@ -99,8 +109,9 @@ export default function Home() {
 
   const makeChoice = (role) => {
     setUserProfile({ role });
-    if (role === 'Mühendis') setStage('muh'); // .webm olacak
-    else setStage('evkizi'); // .webm olacak
+    // BUTON HEDEFLERİ
+    if (role === 'Mühendis') setStage('muh'); // Bu isim switch case'de 'muh' ile eşleşmeli
+    else setStage('evkizi'); // Bu isim switch case'de 'evkizi' ile eşleşmeli
   };
 
   const css = `
